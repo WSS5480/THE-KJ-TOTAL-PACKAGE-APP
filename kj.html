@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>KJ Queue · The Dive</title>
+<link rel="icon" href="/logo.png">
+<link rel="manifest" href="/kj-manifest.json">
+<link rel="apple-touch-icon" href="/kj-apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dive KJ">
+<meta name="theme-color" content="#0a0c0a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@600;800&family=Outfit:wght@400;500;600&display=swap">
+<style>
+:root{--wall:#0a0c0a;--panel:#131713;--panel-2:#1b211b;--line:#2b352b;--green:#39b54a;--green-hi:#5fd36e;--ink:#eef3ee;--ink-2:#9fae9f;--warn:#ff6b6b;
+--slab:"Roboto Slab",Rockwell,Georgia,serif;--body:"Outfit",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--wall);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding:env(safe-area-inset-top,0px) 16px calc(24px + env(safe-area-inset-bottom,0px))}
+main{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-top:16px}
+.lastclk{position:fixed;top:calc(env(safe-area-inset-top,0px) + 150px);right:8px;z-index:900;background:rgba(10,12,10,.92);border:2px solid #39b54a;border-radius:14px;padding:6px 10px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.5);pointer-events:none;min-width:92px}
+.lastclk .k{display:block;font-size:10px;font-weight:800;letter-spacing:.06em;color:#9fae9f;text-transform:uppercase}
+.lastclk .v{display:block;font-size:22px;font-weight:900;color:#5fd36e;font-variant-numeric:tabular-nums;line-height:1.1}
+.lastclk .s{display:block;font-size:11px;color:#9fae9f}
+.lastclk.warn{border-color:#f5c518}.lastclk.warn .v{color:#f5c518}
+.lastclk.over{border-color:#ff5050;animation:clkp 1.6s infinite}.lastclk.over .v{color:#ff6b6b}
+@keyframes clkp{50%{box-shadow:0 0 0 4px rgba(255,80,80,.35)}}
+@media (prefers-reduced-motion:reduce){.lastclk.over{animation:none}}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header img{width:56px}
+header h1{font-family:var(--slab);font-weight:800;font-size:22px;margin:0;flex:1}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+h2{font-family:var(--slab);font-weight:800;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--green-hi);margin:0;display:flex;justify-content:space-between;gap:8px}
+h2 span{font-family:var(--body);font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink-2)}
+.now{font-family:var(--slab);font-weight:800;font-size:30px;line-height:1.15;overflow-wrap:anywhere}
+.singer{border:1px solid var(--green);background:var(--panel-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.singer .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px;color:var(--ink-2)}
+.singer .hd b{color:var(--green-hi);font-family:var(--slab);letter-spacing:.1em;text-transform:uppercase;font-size:12px}
+.singer .hd button{padding:4px 10px;font-size:13px}
+.now .statsBtn{display:block;margin-top:8px;font:inherit;font-family:var(--body);font-weight:600;font-size:14px;letter-spacing:0;text-transform:none;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink)}
+.now .statsBtn[aria-expanded="true"]{border-color:var(--green);color:var(--green-hi)}
+.sgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.sgrid div{background:var(--wall);border-radius:10px;padding:8px;text-align:center}
+.sgrid b{display:block;font-family:var(--slab);font-size:20px;font-variant-numeric:tabular-nums}
+.sgrid span{font-size:11px;color:var(--ink-2);line-height:1.2;display:block}
+.singer .note{font-size:14px;margin:0}
+.crowd{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ctile{background:var(--panel-2,#1b211b);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.ctile b{display:block;font-family:var(--slab);font-size:22px;color:var(--green-hi)}
+.ctile span{font-size:12px;color:var(--ink-2)}
+.addform{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.addform input{font-size:16px;letter-spacing:0;text-align:left}
+.addform #addName,.addform .addspot,.addform button,.addform .err{grid-column:1/-1}
+.addspot{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink-2);text-transform:none;letter-spacing:0}
+.addspot select{flex:1;font:inherit;font-size:16px;background:var(--wall);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px}
+.namepick{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.namepick p{width:100%;margin:0;color:var(--ink-2);font-size:14px}
+/* shout-outs from the crowd run across the top; the DJ puts them on everyone's screen or takes them down, and can announce things */
+.shoutbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:70;display:flex;align-items:center;gap:8px;background:#0f140f;border:1px solid var(--line);border-radius:12px;padding:4px 4px 4px 10px;min-height:46px}
+.shoutbar .tk{flex:1;min-width:0;overflow:hidden;white-space:nowrap;font-size:15px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+.shoutbar .tk>span{display:inline-block;padding-left:100%;animation:tkrun var(--dur,18s) linear infinite}
+.shoutbar .tk>span.still{padding-left:0;animation:none;color:var(--ink-2)}
+.shoutbar .tk b{color:#ffc93c;font-weight:700}.shoutbar .tk .dj{color:var(--green-hi);font-weight:800}.shoutbar .tk .new{color:var(--ink-2);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.shoutbar>button{position:relative;font-size:15px;padding:8px 12px;border-radius:10px;letter-spacing:0;text-transform:none;white-space:nowrap}
+.shoutbar>button .badge{position:absolute;top:-7px;right:-6px;background:#ff3d6e;color:#fff;font-size:12px;font-weight:800;border-radius:999px;min-width:20px;height:20px;line-height:20px;text-align:center;padding:0 5px}
+.bandbar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 52px);z-index:69;display:block;width:100%;font:inherit;font-weight:800;font-size:16px;letter-spacing:0;text-transform:none;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#0f140f;color:var(--ink);cursor:pointer;margin-top:6px}
+.bandbar.on{background:#f5c518;border-color:#f5c518;color:#141015}
+@keyframes tkrun{to{transform:translateX(-100%)}}
+.shlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;border:0}
+.shlist li{display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;border-top:1px solid var(--line)}
+.shlist li .t{flex:1;min-width:0;font-size:15px}.shlist li .t b{display:inline;color:#ffc93c}.shlist li .t small{display:block;color:var(--ink-2);font-size:12px}
+.shlist li button{padding:6px 10px;font-size:13px;flex:none}
+.chipsrow{display:flex;gap:6px;flex-wrap:wrap}.chipsrow button{font-size:14px;padding:7px 11px}
+.forcepin{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.9);display:grid;place-items:center;padding:16px}
+.fpbox{width:100%;max-width:360px;background:var(--panel);border:2px solid var(--green);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.fpbox h2{margin:0}.fpbox p{margin:0;color:var(--ink-2);font-size:14px}
+.fpbox input:not([type=checkbox]){font:inherit;font-size:20px;letter-spacing:.25em;text-align:center}
+.fpterms{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink);text-transform:none;letter-spacing:0;line-height:1.4}
+.fpterms input{width:20px;height:20px;flex:none;margin-top:2px;accent-color:var(--green)}
+.fpterms a{color:var(--green-hi)}
+.singer .phrow{display:flex;gap:12px;align-items:center}
+.singer .phrow img{width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid var(--green);background:#fff;flex:none}
+.singer .phrow span{font-size:13px;color:var(--ink-2);flex:1}
+.singer .phrow{flex-wrap:wrap}
+.singer .phrow .pbox{position:relative;flex:none;cursor:pointer}
+.singer .phrow .pbox i{position:absolute;inset:auto 0 -6px;text-align:center;font-style:normal;font-size:11px;font-weight:700;color:#000;background:var(--gold,#ffc93c);border-radius:999px;padding:1px 4px}
+.singer .phrow .pacts{display:flex;flex-wrap:wrap;gap:6px;width:100%}
+.singer .phrow .pacts button{font-size:14px;padding:8px 12px}
+.singer .phrow .pacts .blurnow{background:#c0392b;color:#fff;border-color:#c0392b;font-weight:700}
+.singer .phrow .pacts .okbtn{background:var(--green);color:#000;border-color:var(--green);font-weight:700}
+img.blur{filter:blur(14px) grayscale(.4);transition:filter .2s}
+img.blur.peek{filter:none}
+li .av.blur{filter:blur(5px)}
+li .av.pend{border-color:var(--gold,#ffc93c);border-style:dashed}
+li .av.hid{border-color:#c0392b}
+li .av{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none;border:2px solid var(--line);background:#fff;cursor:pointer;align-self:center}
+.singer .new{color:var(--green-hi);font-weight:600}
+.singer ol{border:0}
+.singer li{padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.singer li:first-child{border-top:0}
+.chips{display:inline-flex;gap:4px;align-items:center;vertical-align:middle;margin-left:6px}
+.chip{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;font-size:10px;font-weight:800;color:#fff;line-height:1}
+.chip.fb{background:#1877f2}.chip.ig{background:linear-gradient(45deg,#fa7e1e,#d62976,#4f5bd5)}.chip.tt{background:#000;border:1px solid #444}
+.stars{color:#ff6fa8;font-size:13px;margin-left:6px;letter-spacing:1px}
+li .t span.chips{display:inline-flex;color:inherit}
+li .t span.chip{display:inline-grid;color:#fff;font-size:10px}
+li .t span.stars{display:inline;color:#ff6fa8;font-size:13px}
+@media (max-width:420px){.sgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.now small{display:block;font-family:var(--body);font-weight:400;font-size:17px;color:var(--ink-2)}
+button{font:inherit;font-weight:600;font-size:15px;border-radius:999px;padding:9px 14px;cursor:pointer;border:1px solid var(--line);background:var(--panel-2);color:var(--ink)}
+button:hover{border-color:var(--green)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--green-hi);outline-offset:2px}
+.next{background:var(--green);color:#041206;border-color:var(--green);font-family:var(--slab);font-weight:800;font-size:20px;letter-spacing:.06em;text-transform:uppercase;padding:14px 22px}
+.multi{display:flex;gap:8px;align-items:center;font-size:15px;border:1px solid var(--line);border-radius:999px;padding:8px 14px;background:var(--panel-2);cursor:pointer;width:100%}
+.multi input{width:20px;height:20px;accent-color:var(--green)}
+.bizcard{border-color:var(--green)}
+.hint2{font-size:14px;color:var(--ink-2)}
+.danger{color:var(--warn)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+ol{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+li{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+li:first-child{border-top:0}
+li .n{font-family:var(--slab);font-weight:800;color:var(--ink-2);width:26px;text-align:right;font-variant-numeric:tabular-nums}
+li .t{min-width:0;flex:1 1 180px}
+li .t b{display:block;font-weight:500;overflow-wrap:anywhere}
+.bumpcard{border:2px solid #ffc93c}
+.bumplist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.bumplist li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--wall,#0d110d);border-radius:12px;padding:10px}
+.bumplist .bt{flex:1 1 200px;min-width:0}.bumplist .bt b{display:block;color:#ffc93c;font-size:19px}
+.bumplist .bt span{display:block;font-size:14px;color:var(--ink-2)}
+.bumplist button{font:inherit;font-weight:700;border-radius:10px;padding:10px 14px;cursor:pointer;border:1px solid var(--line)}
+.bumplist .yes{background:var(--green,#39b54a);color:#fff;border-color:transparent}.bumplist .no{background:transparent;color:var(--ink)}
+.rpt{margin-top:8px;padding:10px;border-radius:12px;background:rgba(245,197,24,.14);border:2px solid #f5c518;display:flex;flex-direction:column;gap:8px}
+.rpt p{margin:0;color:#ffe27a;font-weight:800;font-size:15px}.rpt .row{display:flex;gap:8px;flex-wrap:wrap}
+.rpt button{flex:1;min-width:120px;font-weight:800}.rpt .yes{background:#39b54a;color:#041206;border-color:#39b54a}.rpt .no{background:#f5c518;color:#111;border-color:#f5c518}
+.nosongtag{display:inline-block;margin-left:8px;font-size:12px;font-weight:800;color:#fff;background:#c0392b;border-radius:6px;padding:1px 6px;vertical-align:middle}
+.paidtag{display:inline-block;margin-left:8px;font-size:12px;font-weight:800;color:#111;background:#ffc93c;border-radius:6px;padding:1px 6px;vertical-align:middle}
+#undoNext{flex:none;font-weight:800;border:2px solid #ffc93c;color:#ffc93c;background:transparent;border-radius:12px;padding:12px 16px}
+.afield{position:relative;width:100%}.afield input{width:100%;box-sizing:border-box}
+.asug{position:absolute;left:0;right:0;top:100%;z-index:20;margin-top:4px;background:var(--panel-2,#1b211b);border:1px solid var(--line);border-radius:10px;overflow:hidden;max-height:300px;overflow-y:auto}
+.asug button{display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);color:var(--ink);padding:10px 12px;font:inherit;cursor:pointer;border-radius:0}
+.asug button:first-child{border-top:0}.asug button span{display:block;font-size:13px;color:var(--ink-2)}
+#queue li .t b{font-size:21px;font-weight:700;color:#ffc93c;line-height:1.2}
+li .t span{display:block;font-size:14px;color:var(--ink-2);overflow-wrap:anywhere}
+li .acts{display:none;flex-basis:100%;gap:6px;flex-wrap:wrap}
+li.open .acts{display:flex}
+li .more{margin-left:auto;flex:none;width:40px;height:36px;padding:0;border-radius:999px;font-size:22px;line-height:1;letter-spacing:0}
+li.open .more{border-color:var(--green);color:var(--green-hi)}
+li .acts button{padding:6px 11px;font-size:14px}
+.empty{padding:14px;color:var(--ink-2);text-align:center;display:block}
+input{width:100%;background:var(--wall);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;font-size:20px;letter-spacing:.3em;text-align:center}
+.err{color:var(--warn);font-size:14px;min-height:20px;margin:0}
+.pill{font-size:13px;border-radius:999px;padding:3px 10px;border:1px solid var(--line)}
+.pill.on{color:var(--green-hi);border-color:var(--green)}
+.pill.off{color:var(--warn);border-color:var(--warn)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
+a{color:var(--green-hi)}
+.install{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--green);border-radius:16px;padding:12px 14px}
+.install img{width:48px;height:48px;border-radius:12px;flex:none}
+.install .tx{flex:1;min-width:0;font-size:14px;line-height:1.35}
+.install .tx b{display:block;font-size:16px}
+.install button{font:inherit;font-weight:700;border-radius:999px;padding:10px 16px;border:0;background:var(--green);color:#041206;cursor:pointer;flex:none}
+.install .x{background:none;color:var(--ink-2);padding:6px;font-size:20px;font-weight:400}
+.postwrap{display:flex;gap:14px;align-items:center}
+.postwrap img{width:96px;aspect-ratio:9/16;border-radius:10px;border:1px solid var(--line);flex:none;object-fit:cover;max-width:100%}
+.postside{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
+.go[disabled]{opacity:.55}
+.iosguide{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:24px 20px calc(70px + env(safe-area-inset-bottom,0px));text-align:center;color:#fff}
+.iosguide .box{background:var(--panel);border:2px solid var(--green);border-radius:18px;padding:18px;max-width:340px;display:flex;flex-direction:column;gap:12px}
+.iosguide .step{display:flex;gap:12px;align-items:center;text-align:left;font-size:17px;line-height:1.3}
+.iosguide .n{width:30px;height:30px;border-radius:50%;background:var(--green);color:#041206;font-weight:800;display:grid;place-items:center;flex:none}
+.iosguide .shareic{display:inline-grid;place-items:center;width:30px;height:30px;border:2px solid #4da3ff;border-radius:8px;color:#4da3ff;font-size:18px;vertical-align:middle}
+.iosguide .arrow{font-size:64px;line-height:1;color:var(--green-hi);margin-top:14px;animation:bob 1s ease-in-out infinite}
+.iosguide .close{background:none;border:0;color:var(--ink-2);font:inherit;text-decoration:underline;padding:6px}
+@keyframes bob{50%{transform:translateY(12px)}}
+@media (prefers-reduced-motion:reduce){.iosguide .arrow{animation:none}}
+.iosguide.top{justify-content:flex-start;padding-top:calc(24px + env(safe-area-inset-top,0px))}
+.iosguide.top .arrow{order:-1;align-self:flex-end;margin:0 10px 8px 0}
+.iosguide.top .arrow::before{content:"⬆"}
+.iosguide.top .arrow{font-size:0}.iosguide.top .arrow::before{font-size:64px}
+.postwrap video{width:96px;aspect-ratio:9/16;border-radius:10px;border:1px solid var(--line);flex:none;object-fit:cover;background:#000;max-width:100%}
+.vidwork{display:flex;flex-direction:column;gap:8px}
+.vidwork .bar{height:8px;border-radius:99px;background:var(--panel-2);overflow:hidden}
+.vidwork .bar span{display:block;height:100%;width:0;background:var(--green);transition:width .3s}
+#vidStage{position:fixed;left:0;top:0;width:2px;height:2px;overflow:hidden;opacity:.01;pointer-events:none}
+.tipin{letter-spacing:0!important;font-size:16px!important;text-align:left!important}
+.tipgrid{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center}
+.tipgrid span{font-size:14px;color:var(--ink-2)}
+.tiptot{font-family:"Roboto Slab",serif;font-weight:800;font-size:28px;color:#ffc93c}
+#tipList li{display:block;padding:10px 12px}
+.tipbydj{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px;color:var(--ink-2)}
+.tipbydj span{border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--ink)}
+.tipbydj span b{color:var(--green-hi)}
+.tipbydj a{color:var(--green-hi);font-size:13px}
+#tipList li b{font-weight:600}
+#tipList li q{display:block;color:var(--ink);margin-top:2px;quotes:"“" "”"}
+#tipList li small{color:var(--ink-2)}
+li.locked .t b{color:#5fd36e!important}li.locked .t b::before{content:"🔒 ";}
+</style>
+<script src="/zoom.js" defer></script>
+<script src="/forgot.js"></script>
+</head>
+<body>
+<main>
+  <div class="shoutbar" id="shoutBar" aria-live="polite"><div class="tk"><span class="still" id="shoutTkText">Shout-outs from the crowd run here 📣</span></div><button type="button" id="shoutOpen">📢 Announce<span class="badge" id="shoutBadge" hidden>0</span></button></div>
+  <button type="button" class="bandbar" id="bandBar">⏸ Pause for band</button>
+  <div class="install" id="installBar" hidden>
+    <img src="/kj-icon-192.png" alt="">
+    <div class="tx"><b>Get the Dive KJ app</b><span id="installHow">Open the queue in one tap.</span></div>
+    <button id="installBtn" type="button">Add</button>
+    <button class="x" id="installX" type="button" aria-label="Hide">×</button>
+  </div>
+  <div class="lastclk" id="lastClk" hidden aria-live="polite"><span class="k">Last song ends</span><span class="v" id="lastClkV">–</span><span class="s" id="lastClkS"></span></div>
+  <header>
+    <img src="/logo.png" alt="The Dive on 495">
+    <h1>KJ queue</h1>
+    <span class="pill" id="openPill"></span>
+    <button id="refreshBtn" type="button" aria-label="Refresh the list">↻ Refresh</button>
+  </header>
+
+  <section class="card" id="login">
+    <h2>Enter KJ PIN</h2>
+    <form id="pinForm" novalidate>
+      <input id="pin" inputmode="numeric" autocomplete="off" maxlength="12" aria-label="KJ PIN">
+      <p class="err" id="pinErr" role="alert"></p>
+      <div class="namepick" id="namePick" hidden></div>
+      <button class="next" type="submit" style="width:100%">Open queue</button>
+    </form>
+  </section>
+
+  <div id="panel" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div class="row" style="justify-content:space-between;font-size:14px;color:var(--ink-2)"><span id="meLine"></span><span class="row" style="gap:6px"><button id="myPinBtn" type="button" style="padding:6px 12px;font-size:13px" hidden>Change my PIN</button><button id="signOut" type="button" style="padding:6px 12px;font-size:13px">Sign out</button></span></div>
+    <form id="myPinForm" class="row" hidden novalidate><input id="myPin" inputmode="numeric" maxlength="8" placeholder="New PIN (4–8 digits)" aria-label="New PIN" style="flex:1 1 160px;font-size:16px"><button type="submit">Save PIN</button><span class="err" id="myPinErr" role="alert"></span></form>
+    <form id="myPhoneForm" class="row" hidden novalidate><input id="myPhone" inputmode="tel" maxlength="20" placeholder="Phone for Forgot PIN" aria-label="Phone for Forgot PIN" style="flex:1 1 160px;font-size:16px;letter-spacing:0"><button type="submit">Save phone</button><span id="myPhoneMsg" style="font-size:13px;color:var(--ink-2)"></span></form>
+    <section class="card bizcard" id="bizCard" hidden>
+      <div class="row" style="justify-content:space-between"><b id="planLine"></b><a href="/setup" id="setupLink">Setup &amp; billing →</a></div>
+      <div id="venueBox" class="row">
+        <span id="venueLine" class="hint2"></span>
+        <button type="button" id="venueBtn">📍 I'm at a new venue tonight</button>
+      </div>
+      <div id="venueForm" class="row" hidden>
+        <input id="venueName" maxlength="60" placeholder="Tonight's venue name" style="flex:1;min-width:160px;font-size:16px;letter-spacing:0;text-align:left">
+        <button type="button" id="venueSave" class="next" style="font-size:15px;padding:10px 16px">Use my location</button>
+      </div>
+      <p class="err" id="venueErr" role="alert"></p>
+    </section>
+
+    <section class="card">
+      <h2>Now singing</h2>
+      <div class="now" id="now">Nobody yet</div>
+      <div class="singer" id="singer" hidden aria-live="polite"></div>
+      <div class="row">
+        <button class="next" id="nextBtn">Next singer</button>
+        <button id="undoNext" type="button" hidden title="Tapped Next by mistake? Puts the last singer back up.">↩ Undo</button>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+    </section>
+
+    <section class="card bumpcard" id="bumpCard" hidden>
+      <h2>🔒 Paid to lock a spot</h2>
+      <p class="sub" style="margin:0">Check your payment app. Tap ✓ when you see the money and they move up right away.</p>
+      <ul id="bumpList" class="bumplist"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Waiting <span id="waitCount"></span></h2>
+      <ol id="queue"></ol>
+    </section>
+
+    <section class="card">
+      <h2>Pause sign-ups <span id="pauseState"></span></h2>
+      <div class="row">
+        <button id="p15" data-m="15">15 min</button>
+        <button id="p30" data-m="30">30 min</button>
+        <button id="p60" data-m="60">1 hour</button>
+        <button id="pOn" data-m="-1">Until I resume</button>
+        <button id="pOff" data-m="0" class="next" hidden>Resume now</button>
+      </div>
+    </section>
+
+    <section class="card" id="crowdCard" hidden>
+      <h2>Tonight's crowd <span>owner &amp; managers</span></h2>
+      <div class="crowd" id="crowd"></div>
+    </section>
+
+    <section class="card">
+      <h2>Add a singer <span>for guests without the app</span></h2>
+      <form id="addForm" class="addform" novalidate>
+        <div class="afield"><input id="addName" maxlength="30" placeholder="Name" aria-label="Singer name" autocomplete="off"><div class="asug" id="nameSug" hidden></div></div>
+        <div class="afield"><input id="addSong" maxlength="80" placeholder="Song" aria-label="Song" autocomplete="off"><div class="asug" id="songSug" hidden></div></div>
+        <div class="afield"><input id="addArtist" maxlength="60" placeholder="Artist (optional)" aria-label="Artist" autocomplete="off"><div class="asug" id="artSug" hidden></div></div>
+        <label class="addspot">Spot in line <select id="addSpot" aria-label="Spot in line"></select></label>
+        <button type="submit" class="next">Add to line</button>
+        <p class="err" id="addErr" role="alert" style="margin:0"></p>
+      </form>
+    </section>
+
+
+    <section class="card" id="tipsCard">
+      <h2><span id="tipsH">Tips</span> <span id="tipState"></span></h2>
+      <div class="row" id="tipMoneyRow" style="justify-content:space-between"><div><div class="tiptot" id="tipTotal">$0</div><small style="color:var(--ink-2)" id="tipTotLbl">tapped tonight · check your apps to confirm</small></div>
+        <button id="tipTake"></button></div>
+      <div id="tipByDj" class="tipbydj" hidden></div>
+      <ol id="tipList"></ol>
+      <div class="row" id="djOnRow" hidden style="justify-content:space-between"><span id="djOnTxt"></span><span class="row" style="gap:6px"><button id="staffTips" type="button"></button><button id="kickDj" class="danger" type="button">Close DJ session</button></span></div>
+      <p id="tipHouse" hidden style="margin:0;color:var(--ink-2);font-size:14px">DJ forgot to sign out? Tap Close DJ session to close their night. It signs them out and stops their tips. Tip money is only in the Bar Owner app.</p>
+      <p id="tipNeedPin" hidden style="margin:0;color:#ffc93c;font-size:14px">🔒 Change your PIN first. The owner set your starting PIN, so make one only you know before adding payment info.</p>
+      <button id="tipPinBtn" type="button" class="next" hidden>Change my PIN</button>
+      <form class="row" id="bumpPriceRow" hidden novalidate style="gap:8px;align-items:center">
+        <span>⏫ Move-up price</span><span>$</span><input id="bumpPriceIn" inputmode="numeric" maxlength="2" style="width:64px;letter-spacing:0" aria-label="Move-up price per spot in dollars"><span>a spot</span>
+        <button type="submit">Save</button><small id="bumpPriceMsg" style="color:var(--ink-2)"></small>
+      </form>
+      <button id="tipLinksBtn" type="button">My payment links</button>
+      <form id="tipLinksForm" hidden novalidate style="display:flex;flex-direction:column;gap:8px">
+        <div class="tipgrid">
+          <span>Cash App</span><input class="tipin" id="tlCash" placeholder="$YourTag" maxlength="21" autocomplete="off">
+          <span>Venmo</span><input class="tipin" id="tlVenmo" placeholder="@username" maxlength="31" autocomplete="off">
+          <span>PayPal.me</span><input class="tipin" id="tlPaypal" placeholder="name" maxlength="40" autocomplete="off">
+          <span>Zelle</span><input class="tipin" id="tlZelle" placeholder="phone or email" maxlength="80" autocomplete="off">
+          <span>Apple Cash</span><input class="tipin" id="tlApple" placeholder="iPhone number" maxlength="80" autocomplete="off">
+        </div>
+        <button type="submit" class="next">Save my links</button>
+        <p class="err" id="tipLinksErr" role="alert"></p>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Night controls</h2>
+      <div class="row">
+        <button id="toggleOpen"></button>
+        <label class="multi" for="multiChk"><input type="checkbox" id="multiChk"> One song per person on the queue</label>
+        <button id="togglePhone" hidden></button>
+        <button id="togglePhotoReview"></button>
+        <button id="toggleLyrics" title="Lyrics buttons in the customer app"></button>
+        <a href="/stats">Analytics</a>
+        <a href="/history">Customer history</a>
+        <a href="/ads">Daily ads</a>
+        <a href="/owner" id="ownerLink" hidden>Owner list</a>
+        <a href="/wheel" target="_blank" rel="noopener">Spin wheel</a>
+        <a href="/wall" target="_blank" rel="noopener">Wall of fame</a>
+        <a href="/tv" target="_blank" rel="noopener">TV screen to cast</a>
+        <a href="/poster" target="_blank" rel="noopener">Print poster</a>
+        <a href="/tent" target="_blank" rel="noopener">Print table signs</a>
+        <button class="danger" id="newNight">Start a new night</button>
+      </div>
+      <div class="confirm" id="nnConfirm" hidden>
+        <span>Clear tonight's whole list?</span>
+        <button class="danger" id="nnYes">Clear it</button>
+        <button id="nnNo">Keep it</button>
+      </div>
+    </section>
+
+    <section class="card" id="hostsCard" hidden>
+      <h2>DJs <span>each has their own PIN</span></h2>
+      <p style="margin:0;color:var(--ink-2);font-size:14px"><b>DJ</b>: runs the night and takes tips. One DJ at a time, signed in from the bar. Only the owner (house PIN) adds logins, resets PINs, and closes a DJ session.</p>
+      <ol id="hostList"></ol>
+      <form id="hostForm" class="row" novalidate>
+        <input id="hostName" placeholder="Name" aria-label="Name" maxlength="30" style="flex:1 1 140px;letter-spacing:0;font-size:16px;text-align:left">
+        <input id="hostPin" placeholder="PIN" aria-label="Host PIN, 4 to 8 digits" inputmode="numeric" maxlength="8" style="flex:0 1 110px;font-size:16px">
+        <button type="submit">Add</button>
+      </form>
+      <p class="err" id="hostErr" role="alert"></p>
+    </section>
+
+    <section class="card">
+      <h2>Already sang <span id="doneCount"></span></h2>
+      <ol id="done"></ol>
+    </section>
+  </div>
+</main>
+<div class="forcepin" id="shoutModal" hidden role="dialog" aria-modal="true" aria-labelledby="shoutTitle">
+  <div class="fpbox" style="max-width:520px;max-height:100%;overflow:auto">
+    <h2 id="shoutTitle">📢 Shout-outs &amp; announcements</h2>
+    <p>Crowd shout-outs land here first. <b>Show</b> puts one on everyone's app for 25 minutes; ✕ drops it.</p>
+    <ul class="shlist" id="shNew"></ul>
+    <p id="shNone" hidden>No new shout-outs right now.</p>
+    <h3 style="margin:6px 0 0;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--green-hi)">On everyone's screen</h3>
+    <ul class="shlist" id="shLive"></ul>
+    <p id="shLiveNone" hidden>Nothing on the screen right now.</p>
+    <h3 style="margin:6px 0 0;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--green-hi)">Announce something</h3>
+    <div class="chipsrow" id="shChips"></div>
+    <input id="shText" maxlength="100" placeholder="Or type it… (Kitchen closes at 11:30)" style="font:inherit;font-size:16px;letter-spacing:0;text-align:left;width:100%;background:var(--wall);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px">
+    <div class="row"><label style="font-size:14px;color:var(--ink-2)">Keep it up for</label><select id="shMin" style="font:inherit;background:var(--wall);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px"><option value="5">5 min</option><option value="10" selected>10 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hour</option></select><button type="button" class="next" id="shSend" style="flex:1">Send to everyone</button></div>
+    <p class="err" id="shErr" role="alert"></p>
+    <button type="button" id="shClose">Close</button>
+  </div>
+</div>
+<div class="forcepin" id="forcePin" hidden role="dialog" aria-modal="true" aria-labelledby="fpTitle">
+  <form class="fpbox" id="fpForm" novalidate>
+    <h2 id="fpTitle">Make your own PIN</h2>
+    <div id="fpPinPart" style="display:flex;flex-direction:column;gap:10px">
+      <p>The owner gave you a starting PIN. Pick a new one only you know (4 to 8 digits). You'll use it from now on.</p>
+      <input id="fpPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="New PIN" aria-label="New PIN">
+      <input id="fpPin2" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="Type it again" aria-label="Type the new PIN again">
+    </div>
+    <label id="fpTermsPart" class="fpterms" for="fpAgree"><input type="checkbox" id="fpAgree"> <span>I have read and agree to the <a href="/terms#hostterms" target="_blank" rel="noopener">Host, DJ &amp; Staff Terms</a>, including that I'm not an employee unless I have a separate written agreement, that tips, move-up payments, and taxes on them are my responsibility, the rules for locked spots, and the release in Section 6.</span></label>
+    <button type="submit" class="next" id="fpGo">Save my PIN</button>
+    <p class="err" id="fpErr" role="alert"></p>
+    <button type="button" id="fpOut" style="background:none;border:0;color:var(--ink-2);text-decoration:underline;font:inherit;font-size:14px">Sign out</button>
+  </form>
+</div>
+<div class="iosguide" id="iosGuide" hidden role="dialog" aria-label="Add The Dive app">
+  <div class="box">
+    <div class="step"><span class="n">1</span><span>Tap the <span class="shareic" aria-hidden="true">⬆︎</span> <b>Share</b> button <span id="iosShareWhere">below</span></span></div>
+    <div class="step"><span class="n">2</span><span>Scroll down, tap <b>Add to Home Screen</b></span></div>
+    <div class="step"><span class="n">3</span><span>Tap <b>Add</b>. Done!</span></div>
+    <button class="close" id="iosGuideX" type="button">Close</button>
+  </div>
+  <div class="arrow" aria-hidden="true">⬇</div>
+<script>
+const $ = id => document.getElementById(id);
+let pin = "", state = null, timer = null;
+try{ pin = sessionStorage.getItem("kj_pin") || ""; }catch(e){}
+let pinName = ""; try{ pinName = sessionStorage.getItem("kj_name") || ""; }catch(e){}
+
+let loginTry = false, loginWhere = null, djWatch = null, djLastSent = 0;
+function getWhere(){ return new Promise((ok, bad) => { if(!navigator.geolocation) return bad(new Error("none")); navigator.geolocation.getCurrentPosition(p => ok({ lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy) }), bad, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }); }); }
+function stopDjWatch(){ if(djWatch !== null && navigator.geolocation) navigator.geolocation.clearWatch(djWatch); djWatch = null; }
+function startDjWatch(){
+  if(djWatch !== null || !navigator.geolocation || !state || !state.me || state.me.role !== "dj" || !state.hasSpot) return;
+  djWatch = navigator.geolocation.watchPosition(p => {
+    if(Date.now() - djLastSent < 45000) return; djLastSent = Date.now();
+    api("/api/kj/where", { lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy) }).catch(() => {});
+  }, () => {}, { enableHighAccuracy: true, maximumAge: 30000 });
+}
+async function api(path, body){
+  const h = { "Content-Type": "application/json", "x-kj-pin": pin }; if(loginTry) h["x-kj-login"] = "1"; if(pinName) h["x-kj-name"] = encodeURIComponent(pinName);
+  if(loginTry && loginWhere){ h["x-kj-lat"] = loginWhere.lat; h["x-kj-lng"] = loginWhere.lng; h["x-kj-acc"] = loginWhere.acc; }
+  const r = await fetch(path, { method: body === undefined ? "GET" : "POST", cache: "no-store", headers: h, body: body === undefined ? undefined : JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if(r.status === 401){ logout(j.kicked ? j.error : "Wrong PIN."); throw new Error("pin"); }
+  if(r.status === 423){ logout(j.error); throw new Error("pin"); }
+  if(r.status === 403 && j.needNewPin){ showForcePin(); throw new Error("pin"); }
+  if(!r.ok){ const er = new Error(j.error || "Something went wrong. Try again."); er.data = j; throw er; }
+  return j;
+}
+function logout(msg){ if($("lastClk")) $("lastClk").hidden = true; stopDjWatch(); pin = ""; pinName = ""; try{ sessionStorage.removeItem("kj_name"); }catch(e){} $("forcePin").hidden = true; try{ sessionStorage.removeItem("kj_pin"); }catch(e){} $("panel").hidden = true; $("login").hidden = false; $("pinErr").textContent = msg || ""; clearInterval(timer); }
+window.diveRefresh = () => pin && !$("panel").hidden ? Promise.all([load(), typeof loadTips === "function" ? loadTips() : null]) : location.reload();
+async function load(){
+  try{ state = await api("/api/kj/state"); render(); paintLastClk(); startDjWatch(); if(Date.now() > errUntil) $("err").textContent = ""; }
+  catch(e){ if(e.message !== "pin") $("err").textContent = "Lost connection. Retrying…"; }
+}
+var errUntil = 0;
+async function act(path, body){
+  try{ const j = await api(path, body || {}); if(j && j.note){ $("err").textContent = j.note; errUntil = Date.now() + 6000; } }catch(e){ if(e.message !== "pin"){ $("err").textContent = e.message; errUntil = Date.now() + 6000; } }
+  load();
+}
+/* ---------- shout-outs and announcements ---------- */
+let shoutKey = "", shouts = [];
+const SH_CHIPS = ["🍽 Kitchen closing in 15 min", "🍽 Kitchen is closed", "🍻 Last call!", "🎤 Sign-ups closing soon", "⏰ Last song coming up", "🎉 Tip your bartenders!"];
+function paintShouts(list){
+  shouts = list || []; const tk = $("shoutTkText"), pend = shouts.filter(x => !x.ok);
+  $("shoutBadge").hidden = !pend.length; $("shoutBadge").textContent = pend.length;
+  const key = shouts.map(x => x.id + (x.ok ? "y" : "n")).join(",");
+  if(key !== shoutKey){
+    shoutKey = key;
+    if(!shouts.length){ tk.className = "still"; tk.textContent = "Shout-outs from the crowd run here 📣"; tk.style.removeProperty("--dur"); }
+    else {
+      tk.className = ""; tk.innerHTML = "";
+      shouts.slice().reverse().forEach((x, i) => {
+        if(i) tk.appendChild(document.createTextNode("    •    "));
+        if(!x.ok){ const n = document.createElement("span"); n.className = "new"; n.textContent = "new · "; tk.appendChild(n); }
+        if(x.dj){ const w = document.createElement("span"); w.className = "dj"; w.textContent = "📢 " + x.who + ": "; tk.appendChild(w); tk.appendChild(document.createTextNode(x.text)); }
+        else { tk.appendChild(document.createTextNode("💬 " + x.text + "  ")); const w = document.createElement("b"); w.textContent = "— " + x.who; tk.appendChild(w); }
+      });
+      tk.style.setProperty("--dur", Math.max(14, Math.round(tk.textContent.length * 0.3)) + "s");
+    }
+  }
+  if(!$("shoutModal").hidden) paintShoutLists();
+}
+function shRow(x, live){
+  const li = document.createElement("li"); const t = document.createElement("div"); t.className = "t";
+  const b = document.createElement("b"); b.textContent = (x.dj ? "📢 " : "💬 ") + x.who + ": "; t.appendChild(b); t.appendChild(document.createTextNode(x.text));
+  const sm = document.createElement("small"); sm.textContent = new Date(x.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + (x.until ? " · until " + new Date(x.until).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : ""); t.appendChild(sm);
+  li.appendChild(t);
+  if(!live){ const ok = document.createElement("button"); ok.className = "next"; ok.textContent = "Show"; ok.addEventListener("click", () => shAct(x.id, "show")); li.appendChild(ok); }
+  const no = document.createElement("button"); no.textContent = "✕"; no.setAttribute("aria-label", "Take down"); no.addEventListener("click", () => shAct(x.id, "remove")); li.appendChild(no);
+  return li;
+}
+function paintShoutLists(){
+  const pend = shouts.filter(x => !x.ok), live = shouts.filter(x => x.ok);
+  $("shNew").innerHTML = ""; pend.slice().reverse().forEach(x => $("shNew").appendChild(shRow(x, false))); $("shNone").hidden = !!pend.length;
+  $("shLive").innerHTML = ""; live.slice().reverse().forEach(x => $("shLive").appendChild(shRow(x, true))); $("shLiveNone").hidden = !!live.length;
+}
+async function shAct(id, what){ $("shErr").textContent = ""; try{ const j = await api("/api/kj/shout/" + id + "/" + what, {}); paintShouts(j.shouts); }catch(e){ if(e.message !== "pin") $("shErr").textContent = e.message; } }
+$("shoutOpen").addEventListener("click", () => { $("shErr").textContent = ""; $("shoutModal").hidden = false; if($("lastClk")) $("lastClk").style.visibility = "hidden"; paintShoutLists(); });
+$("shClose").addEventListener("click", () => { $("shoutModal").hidden = true; if($("lastClk")) $("lastClk").style.visibility = ""; });
+SH_CHIPS.forEach(c => { const b = document.createElement("button"); b.type = "button"; b.textContent = c; b.addEventListener("click", () => { $("shText").value = c; $("shText").focus(); }); $("shChips").appendChild(b); });
+$("shSend").addEventListener("click", async () => {
+  $("shErr").textContent = ""; const text = $("shText").value.trim(); if(!text){ $("shErr").textContent = "Pick one or type the announcement."; return; }
+  try{ const j = await api("/api/kj/announce", { text, minutes: Number($("shMin").value) }); paintShouts(j.shouts); $("shText").value = ""; }catch(e){ if(e.message !== "pin") $("shErr").textContent = e.message; }
+});
+/* ---------- singer card: pops up with their past data when they're up ---------- */
+const CHIP = { Facebook: ["fb", "f"], Instagram: ["ig", "IG"], TikTok: ["tt", "TT"] };
+function chips(list){
+  const w = document.createElement("span"); w.className = "chips";
+  (list || []).forEach(n => { const c = document.createElement("span"); c.className = "chip " + CHIP[n][0]; c.textContent = CHIP[n][1]; c.title = "Posted to " + n; c.setAttribute("aria-label", "Posted to " + n); w.appendChild(c); });
+  return w;
+}
+const likeStr = n => n ? "❤️ " + n : "";
+let singerFor = null, singerPinned = false, lastUp = null;
+function ago(t){
+  const d = Math.round((Date.now() - Date.parse(t)) / 864e5);
+  return d <= 0 ? "today" : d === 1 ? "yesterday" : d < 14 ? d + " days ago" : d < 60 ? Math.round(d / 7) + " weeks ago" : new Date(t).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+}
+// host-only photo fetch (works for blurred and waiting photos too); cached per photo version
+const picUrls = new Map();
+async function kjPic(img, r){
+  const k = r.id + ":" + r.photo;
+  if(picUrls.has(k)){ img.src = picUrls.get(k); return; }
+  try{
+    const res = await fetch("/api/kj/photo/" + r.id, { cache: "no-store", headers: { "x-kj-pin": pin } });
+    if(!res.ok) throw 0;
+    const u = URL.createObjectURL(await res.blob()); if(picUrls.size > 200) picUrls.clear(); picUrls.set(k, u); img.src = u;
+  }catch(e){ img.src = "/logo.png"; }
+}
+// after a photo action, reload and reopen the card with fresh info
+async function photoAct(r, path, body, btn){
+  if(btn) btn.disabled = true;
+  try{ await api(path, body || {}); await load(); const n = (state.queue || []).find(x => x.id === r.id) || { ...r, photo: null }; showSinger(n, singerPinned); }
+  catch(e){ if(btn) btn.disabled = false; if(e.message !== "pin") $("err").textContent = e.message; }
+}
+function photoRow(r){
+  const pr = document.createElement("div"); pr.className = "phrow";
+  const st = r.photoSt, lock = r.photoLock;
+  if(r.photo){
+    const bx = document.createElement("div"); bx.className = "pbox";
+    const im = document.createElement("img"); im.alt = r.name + "'s photo"; kjPic(im, r);
+    if(st !== "ok"){ im.className = "blur"; bx.title = "Hold to peek"; const tag = document.createElement("i"); tag.textContent = st === "pending" ? "WAITING" : "BLURRED"; bx.append(im, tag);
+      const peek = on => im.classList.toggle("peek", on);
+      bx.addEventListener("pointerdown", () => peek(true)); ["pointerup", "pointerleave", "pointercancel"].forEach(ev => bx.addEventListener(ev, () => peek(false)));
+    } else bx.append(im);
+    pr.appendChild(bx);
+  }
+  const tx = document.createElement("span");
+  tx.textContent = !r.photo ? "No photo." : st === "ok" ? "Their photo shows on the TV and wheel. Not OK? Blur it now." : st === "pending" ? "Waiting for your OK. Nobody sees it until you approve. Hold the photo to peek." : "Blurred. It's off the TV, wheel and list. Hold the photo to peek.";
+  if(lock) tx.textContent += lock === "always" ? " 🔒 Photo button locked for good." : " 🔒 Photo button locked tonight.";
+  pr.appendChild(tx);
+  const a = document.createElement("div"); a.className = "pacts";
+  const b = (label, cls, fn) => { const x = document.createElement("button"); x.type = "button"; x.textContent = label; if(cls) x.className = cls; x.addEventListener("click", () => fn(x)); a.appendChild(x); return x; };
+  const P = "/api/kj/photo/" + r.id;
+  if(r.photo && st === "ok") b("🙈 Blur now", "blurnow", x => photoAct(r, P + "/blur", {}, x));
+  if(r.photo && st === "pending" && !lock) b("✓ Approve", "okbtn", x => photoAct(r, P + "/show", {}, x));
+  if(r.photo && st === "hidden" && !lock) b("Unblur", "", x => photoAct(r, P + "/show", {}, x));
+  if(lock !== "night" && lock !== "always") b("🔒 Lock tonight", "", x => photoAct(r, P + "/lock", { mode: "night" }, x));
+  if(lock !== "always") b("🔒 Lock always", "", x => { if(confirm("Lock " + r.name + "'s photo button for good? You can unlock it later.")) photoAct(r, P + "/lock", { mode: "always" }, x); });
+  if(lock) b("🔓 Unlock", "", x => photoAct(r, P + "/lock", { mode: "off" }, x));
+  if(r.photo) b("Delete photo", "danger", x => photoAct(r, P + "/remove", {}, x));
+  pr.appendChild(a);
+  return pr;
+}
+async function showSinger(r, pinned){
+  singerFor = r.id; singerPinned = !!pinned;
+  const box = $("singer"); box.hidden = false;
+  box.innerHTML = '<div class="hd"><b>Loading ' + r.name.replace(/[<>&]/g, "") + '…</b></div>';
+  let j; try{ j = await api("/api/kj/singer/" + r.id); }catch(e){ box.hidden = true; return; }
+  if(singerFor !== r.id) return;
+  box.innerHTML = "";
+  const hd = document.createElement("div"); hd.className = "hd";
+  const t = document.createElement("b"); t.textContent = (pinned ? "About " + r.name : "Singer history");
+  const x = document.createElement("button"); x.type = "button"; x.textContent = "Hide"; x.addEventListener("click", () => { box.hidden = true; singerPinned = false; });
+  hd.append(t, x); box.appendChild(hd);
+  if(r.photo || r.photoLock) box.appendChild(photoRow(r));
+  if(!j.songs){
+    const p = document.createElement("p"); p.className = "note new"; p.textContent = "★ First time singing here! Give them a shout-out."; box.appendChild(p); return;
+  }
+  const g = document.createElement("div"); g.className = "sgrid";
+  [[j.songs, "songs sung"], [j.nights, j.nights === 1 ? "night" : "nights"], [j.likes || 0, "crowd likes"], [j.posts, "songs posted"]].forEach(([v, l]) => {
+    const d = document.createElement("div"); const b = document.createElement("b"); b.textContent = v; const s = document.createElement("span"); s.textContent = l; d.append(b, s); g.appendChild(d);
+  });
+  box.appendChild(g);
+  const note = document.createElement("p"); note.className = "note";
+  note.textContent = (j.lastVisit ? "Last here " + ago(j.lastVisit) + "." : "Only tonight so far.") + (j.tonight ? " " + j.tonight + " song" + (j.tonight === 1 ? "" : "s") + " tonight." : "") + (j.firstVisit && j.lastVisit ? " Coming since " + new Date(j.firstVisit).toLocaleDateString([], { month: "short", day: "numeric" }) + "." : "") + (j.onWall ? " On the Wall of Fame " + j.onWall + "×." : "");
+  box.appendChild(note);
+  if(j.fav.length){ const f = document.createElement("p"); f.className = "note"; f.textContent = "Favorite: " + j.fav.map(x => x.song + " (" + x.times + "×)").join(", "); box.appendChild(f); }
+  const ol = document.createElement("ol");
+  j.recent.forEach(x => {
+    const li = document.createElement("li"); const tt = document.createElement("div"); tt.className = "t";
+    const b = document.createElement("b"); b.textContent = x.song + (x.artist ? " – " + x.artist : "");
+    if(x.likes){ const st = document.createElement("span"); st.className = "stars"; st.textContent = likeStr(x.likes); b.appendChild(st); }
+    if(x.posted && x.posted.length) b.appendChild(chips(x.posted));
+    const s = document.createElement("span"); s.textContent = ago(x.at);
+    tt.append(b, s); li.appendChild(tt); ol.appendChild(li);
+  });
+  box.appendChild(ol);
+}
+// rows look like the singer app: number, photo, name, song. The DJ's buttons open with ⋯ and stay open while they work on that singer.
+const openRows = new Set();
+function item(r, i, waiting){
+  const li = document.createElement("li"); if(r.paid && waiting) li.classList.add("locked"); if(openRows.has(r.id)) li.classList.add("open");
+  const n = document.createElement("span"); n.className = "n"; n.textContent = waiting ? i + 1 : "✓";
+  const t = document.createElement("div"); t.className = "t";
+  const b = document.createElement("b"); b.textContent = r.name;
+  const s = document.createElement("span"); s.textContent = r.song + (r.artist ? " – " + r.artist : "");
+  if(r.likes){ const st = document.createElement("span"); st.className = "stars"; st.textContent = likeStr(r.likes); b.appendChild(st); }
+  if(r.posted && r.posted.length) b.appendChild(chips(r.posted));
+  if(r.nosong){ const ns = document.createElement("span"); ns.className = "nosongtag"; ns.textContent = r.repeatAsk ? "🔁 REPEAT · waiting for a new pick" : "✗ NO SONG · waiting for a new pick"; b.appendChild(ns); }
+  if(r.paid && waiting){ const pd = document.createElement("span"); pd.className = "paidtag"; pd.textContent = r.djLock ? "DJ LOCK" : "PAID"; pd.title = "Paid to lock this spot. Others flow around them; it can't be moved down."; b.appendChild(pd); }
+  t.append(b, s); li.append(n);
+  if(r.photo && waiting){ const av = document.createElement("img"); av.className = "av" + (r.photoSt === "pending" ? " blur pend" : r.photoSt === "hidden" ? " blur hid" : ""); av.alt = "Photo of " + r.name + (r.photoSt === "pending" ? ", waiting for your OK" : r.photoSt === "hidden" ? ", blurred" : "") + ". Tap to check it."; kjPic(av, r); av.addEventListener("click", () => { showSinger(r, true); $("now").scrollIntoView({ behavior: "smooth", block: "start" }); }); li.append(av); }
+  li.append(t);
+  const more = document.createElement("button"); more.type = "button"; more.className = "more"; more.textContent = "⋯"; more.setAttribute("aria-label", "Buttons for " + r.name); more.setAttribute("aria-expanded", String(openRows.has(r.id)));
+  more.addEventListener("click", () => { if(openRows.has(r.id)) openRows.delete(r.id); else openRows.add(r.id); li.classList.toggle("open", openRows.has(r.id)); more.setAttribute("aria-expanded", String(openRows.has(r.id))); });
+  li.append(more);
+  const info = document.createElement("button"); info.textContent = "History"; info.addEventListener("click", () => { showSinger(r, true); $("now").scrollIntoView({ behavior: "smooth", block: "start" }); });
+  if(!waiting){
+    const a = document.createElement("div"); a.className = "acts";
+    const back = document.createElement("button"); back.textContent = "↩ Put back"; back.className = "next";
+    back.title = "Skipped by mistake? Puts them back in line as next up";
+    back.addEventListener("click", () => { const n = prompt("Put " + r.name + " back at which spot? (1 = next up)", "1"); if(n === null) return; act(`/api/kj/${r.id}/readd`, { spot: parseInt(n, 10) || 1 }); });
+    a.append(back, info); li.appendChild(a);
+  }
+  if(waiting){
+    const a = document.createElement("div"); a.className = "acts";
+    const mk = (label, action, cls) => { const x = document.createElement("button"); x.textContent = label; if(cls) x.className = cls; x.addEventListener("click", () => act(`/api/kj/${r.id}/${action}`)); return x; };
+    const fix = document.createElement("button"); fix.textContent = "Fix name";
+    fix.addEventListener("click", () => { const n = window.prompt("Correct name for this singer (also fixes their phone):", r.name); if(n && n.trim()) act(`/api/kj/${r.id}/rename`, { name: n.trim() }); });
+    const fs = document.createElement("button"); fs.textContent = "Edit song";
+    fs.addEventListener("click", () => { const so = prompt("Song for " + r.name + ":", r.song); if(so === null || !so.trim()) return; const ar = prompt("Artist (optional):", r.artist || ""); if(ar === null) return; act(`/api/kj/${r.id}/song`, { song: so.trim(), artist: ar.trim() }); });
+    const mv = document.createElement("button"); mv.textContent = "Move to #";
+    mv.addEventListener("click", async () => {
+      const n = prompt("Move " + r.name + " to which spot in line? (1 = next up)", String(i + 1)); if(n === null) return; const v = parseInt(n, 10); if(!(v >= 1)) return;
+      try{
+        const j = await api(`/api/kj/${r.id}/move`, { spot: v });
+        if(j && j.note){ $("err").textContent = "🔒 " + j.note; errUntil = Date.now() + 6000; }
+        else if(!r.paid && confirm("🔒 Lock " + r.name + "'s spot at #" + v + "?\n\nOK = lock it (nobody can push them down)\nCancel = leave it unlocked")) await api(`/api/kj/${r.id}/lock`, {});
+      }catch(e){ if(e.message !== "pin"){ $("err").textContent = e.message; errUntil = Date.now() + 6000; } }
+      load();
+    });
+    const nsb = r.nosong ? mk("↩ Have it", "hassong") : mk("✗ Don't have it", "nosong", "danger");
+    nsb.title = r.nosong ? "Undo: you have this song" : "Tell the singer you don't have this song. They keep their spot and pick another.";
+    a.append(mk("Sing now", "up"), mk("↑", "raise"), mk("↓", "lower"), mv, fix, fs, info, mk("Remove", "remove", "danger"));
+    a.children[1].setAttribute("aria-label", "Move up"); a.children[2].setAttribute("aria-label", "Move down");
+    a.appendChild(nsb);
+    if(r.repeat){
+      const box = document.createElement("div"); box.className = "rpt"; box.setAttribute("role", "alert");
+      const when = r.repeat.at ? " at " + new Date(r.repeat.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+      const p = document.createElement("p"); p.textContent = "🔁 Repeat song: " + (r.repeat.where === "sung" ? "sung tonight" + when + " by " + r.repeat.by : r.repeat.by + " has it (" + r.repeat.where + ")") + ". Let it play?";
+      const row = document.createElement("div"); row.className = "row";
+      const y = mk("✓ Yes, play it", "repeatok", "yes"), no = mk("↻ No, ask to change", "repeatno", "no");
+      no.title = "The singer keeps their spot and gets a pop-up to pick a different song.";
+      row.append(y, no); box.append(p, row); li.appendChild(box);
+    }
+    if(r.djLock) a.appendChild(mk("🔓 Unlock", "unlock")); else if(!r.paid) a.appendChild(mk("🔒 Lock", "lock"));
+    li.appendChild(a);
+  }
+  return li;
+}
+/* ---------- first sign-in: DJs and staff replace the owner's starting PIN with their own ---------- */
+function fpNeeds(){ const m = (state && state.me) || {}; return { pin: !m.admin && !m.own, terms: !m.admin && !m.agreed }; }
+function showForcePin(){
+  const n = fpNeeds();
+  $("fpPinPart").hidden = !n.pin; $("fpTermsPart").hidden = !n.terms;
+  $("fpTitle").textContent = n.pin ? "Make your own PIN" : "Host, DJ & Staff Terms";
+  $("fpGo").textContent = n.pin && n.terms ? "Agree & save my PIN" : n.pin ? "Save my PIN" : "I agree";
+  if(!$("forcePin").hidden) return;
+  $("forcePin").hidden = false; $("fpErr").textContent = ""; $("fpPin").value = ""; $("fpPin2").value = ""; $("fpAgree").checked = false;
+  setTimeout(() => (n.pin ? $("fpPin") : $("fpAgree")).focus(), 50);
+}
+function paintCrowd(box, su, ph){
+  if(!box) return; box.innerHTML = "";
+  const tile = (v, l) => { const d = document.createElement("div"); d.className = "ctile"; const b = document.createElement("b"); b.textContent = v; const sp = document.createElement("span"); sp.textContent = l; d.append(b, sp); box.appendChild(d); };
+  if(ph){ tile(ph.now, "phones open now"); tile(ph.tonight, "phones tonight" + (ph.since ? " (since " + new Date(ph.since).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + ")" : "")); if(ph.today != null) tile(ph.today, "opened the app today (since 6 AM)"); tile(ph.app, "installed the app"); }
+  if(su){ tile(su.total, "sign-ups tonight"); tile(su.qr, "scanned the QR"); tile(su.app, "from the app"); tile(su.link, "from the link"); tile(su.dj, "added by the DJ"); if(su.untracked) tile(su.untracked, "before tracking"); }
+}
+function paintLastClk(){
+  const el = $("lastClk"), L = state && state.lastSong; if(!el) return;
+  if(!L || $("panel").hidden){ el.hidden = true; return; }
+  el.hidden = false;
+  const f = t => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if(!L.at){ $("lastClkV").textContent = "—"; $("lastClkS").textContent = "list empty"; el.className = "lastclk"; return; }
+  const left = (L.closeAt - L.at) / 60000;
+  $("lastClkV").textContent = f(L.at);
+  $("lastClkS").textContent = left < 0 ? Math.round(-left) + " min past close" : "close " + f(L.closeAt);
+  el.className = "lastclk" + (left < 0 ? " over" : left < 20 ? " warn" : "");
+  el.setAttribute("aria-label", "Last song ends about " + f(L.at) + ". " + $("lastClkS").textContent);
+}
+let bandOn = false;
+function paintBand(on){ bandOn = !!on; const b = $("bandBar"); b.classList.toggle("on", bandOn); b.textContent = bandOn ? "⏸ PAUSED FOR BAND · tap to resume" : "⏸ Pause for band"; }
+$("bandBar").addEventListener("click", async () => { const want = !bandOn; paintBand(want); try{ const j = await api("/api/kj/bandpause", { on: want }); paintBand(j.band); }catch(e){ paintBand(!want); } });
+function render(){
+  if(state && state.me && !state.me.admin && (!state.me.own || !state.me.agreed)) showForcePin();
+  paintMe(); paintBiz(); try{ paintShouts(state.shouts || []); paintBand(state.band); }catch(e){}
+  const up = state.queue.find(r => r.status === "up"), waiting = state.queue.filter(r => r.status === "queued");
+  const now = $("now"); now.innerHTML = "";
+  if(up){ now.textContent = up.name; const s = document.createElement("small"); s.textContent = up.song + (up.artist ? " – " + up.artist : ""); now.appendChild(s);
+    // the singer's history and photo stay out of the way until the DJ asks for them
+    const st = document.createElement("button"); st.type = "button"; st.className = "statsBtn"; st.textContent = up.photoSt === "pending" ? "📷 Photo to approve · stats" : "📊 Singer stats";
+    st.setAttribute("aria-expanded", String(!$("singer").hidden && singerFor === up.id));
+    st.addEventListener("click", () => { if(!$("singer").hidden && singerFor === up.id){ $("singer").hidden = true; singerPinned = false; singerFor = null; st.setAttribute("aria-expanded", "false"); } else { showSinger(up, true); st.setAttribute("aria-expanded", "true"); } });
+    now.appendChild(st); }
+  else now.textContent = waiting.length ? "Tap Next singer to start" : "Nobody yet";
+  // a new singer is up: close the last one's panel; theirs opens on request
+  if(up && up.id !== lastUp){ lastUp = up.id; if(singerFor !== up.id){ $("singer").hidden = true; singerPinned = false; singerFor = null; } }
+  if(!up){ lastUp = null; if(!singerPinned){ $("singer").hidden = true; singerFor = null; } }
+  $("nextBtn").textContent = up ? "Done, next singer" : "Start first singer";
+  $("undoNext").hidden = !state.undo;
+  $("waitCount").textContent = waiting.length + " waiting";
+  { const sel = $("addSpot"), keep = sel.value; sel.innerHTML = ""; const o = new Option("End of line (#" + (waiting.length + 1) + ")", ""); sel.add(o);
+    for(let k = 1; k <= waiting.length; k++) sel.add(new Option("#" + k + (k === 1 ? " (next up)" : ""), String(k)));
+    if([...sel.options].some(x => x.value === keep)) sel.value = keep; }
+  { const PAY = { cashapp: "Cash App", venmo: "Venmo", paypal: "PayPal", zelle: "Zelle", apple: "Apple Cash" };
+    const bl = state.bumps || [], box = $("bumpList"); $("bumpCard").hidden = !bl.length; box.innerHTML = "";
+    bl.forEach(b => {
+      const at = waiting.findIndex(r => r.id === b.sid) + 1, to = Math.max(1, at - b.spots);
+      const li = document.createElement("li"), t = document.createElement("div"); t.className = "bt";
+      const nb = document.createElement("b"); nb.textContent = b.name;
+      const sp = document.createElement("span"); sp.textContent = "$" + b.amount + " by " + (PAY[b.method] || b.method) + (state.me && state.me.role !== "dj" ? " to " + b.to : "") + " · up " + b.spots + (b.spots === 1 ? " spot" : " spots") + (at ? " (#" + at + " → #" + to + ")" : "");
+      t.append(nb, sp);
+      const y = document.createElement("button"); y.className = "yes"; y.type = "button"; y.textContent = "✓ Paid, lock it";
+      y.onclick = () => act("/api/kj/bump/" + b.id, { ok: true });
+      const n = document.createElement("button"); n.className = "no"; n.type = "button"; n.textContent = "✗ Not paid";
+      n.onclick = () => act("/api/kj/bump/" + b.id, { ok: false });
+      li.append(t, y, n); box.appendChild(li);
+    }); }
+  { const row = $("bumpPriceRow"), on = state.bumpPrice != null; row.hidden = !on;
+    if(on && document.activeElement !== $("bumpPriceIn")) $("bumpPriceIn").value = state.bumpPrice;
+    $("bumpPriceMsg").textContent = on && !state.bumpOn ? "(owner turned move-ups off)" : ""; }
+  const q = $("queue"); q.innerHTML = "";
+  if(!waiting.length){ const li = document.createElement("li"); li.className = "empty"; li.textContent = "No one waiting. Put the QR poster where people can see it."; q.appendChild(li); }
+  waiting.forEach((r, i) => q.appendChild(item(r, i, true)));
+  const d = $("done"); d.innerHTML = "";
+  $("doneCount").textContent = state.done.length ? state.done.length + " tonight" : "";
+  if(!state.done.length){ const li = document.createElement("li"); li.className = "empty"; li.textContent = "Singers move here when you tap Next."; d.appendChild(li); }
+  state.done.forEach((r, i) => d.appendChild(item(r, i, false)));
+  const p = state.pause || { paused: false };
+  $("openPill").textContent = !state.open ? "Sign-ups closed" : p.paused ? "Sign-ups paused" : "Sign-ups open";
+  $("openPill").className = "pill " + (state.open && !p.paused ? "on" : "off");
+  $("pauseState").textContent = p.paused ? (p.until ? "paused until " + new Date(p.until).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "paused") : "";
+  $("pOff").hidden = !p.paused;
+  $("toggleOpen").textContent = state.open ? "Close sign-ups" : "Open sign-ups";
+  $("multiChk").checked = !state.multi;
+  $("toggleLyrics").textContent = state.lyrics === false ? "Lyrics: off" : "Lyrics: on";
+  $("togglePhone").hidden = !state.twilioReady;
+  $("togglePhone").textContent = state.phoneSignin ? "Phone sign-in: on" : "Phone sign-in: off";
+  const wait = (state.queue || []).filter(x => x.photo && x.photoSt === "pending").length;
+  $("togglePhotoReview").textContent = (state.photoReview ? "Approve photos first: on" : "Approve photos first: off") + (wait ? " (" + wait + " waiting)" : "");
+}
+function start(){ $("login").hidden = true; $("panel").hidden = false; load(); setTimeout(loadTips, 600); clearInterval(timer); timer = setInterval(load, 4000); }
+
+$("pinForm").addEventListener("submit", async e => {
+  e.preventDefault(); const v = $("pin").value.trim();
+  if(!v){ $("pinErr").textContent = "Enter the PIN."; return; }
+  if(pin !== v){ pinName = ""; } pin = v; $("namePick").hidden = true;
+  loginTry = true; loginWhere = null;
+  try{
+    try{ await api("/api/kj/state"); }
+    catch(e){
+      if(!(e.data && e.data.needLoc)) throw e;
+      $("pinErr").textContent = "Checking you're at the bar…";
+      try{ loginWhere = await getWhere(); }catch(g){ throw new Error("DJs sign in from the bar. Allow location for this site and try again."); }
+      await api("/api/kj/state");
+    }
+    try{ sessionStorage.setItem("kj_pin", pin); sessionStorage.setItem("kj_name", pinName); }catch(e){} $("pinErr").textContent = ""; loginTry = false; loginWhere = null; start();
+  }
+  catch(e){ loginTry = false; loginWhere = null;
+    // starting PIN shared by several new logins: ask which one they are
+    if(e.data && e.data.pickName){
+      const box = $("namePick"); box.innerHTML = "<p>That's a starting PIN. Tap your name:</p>"; box.hidden = false; $("pinErr").textContent = "";
+      e.data.names.forEach(n => { const b = document.createElement("button"); b.type = "button"; b.textContent = n; b.addEventListener("click", () => { pinName = n; box.hidden = true; $("pinForm").requestSubmit ? $("pinForm").requestSubmit() : $("pinForm").dispatchEvent(new Event("submit")); }); box.appendChild(b); });
+      return;
+    } if(e.message !== "pin") $("pinErr").textContent = e.data ? e.message : (e.message.startsWith("DJs") ? e.message : "Couldn't reach the server. Try again."); }
+});
+$("pin").addEventListener("input", () => $("pinErr").textContent = "");
+$("nextBtn").addEventListener("click", () => act("/api/kj/next"));
+$("undoNext").addEventListener("click", () => act("/api/kj/undo-next"));
+["p15", "p30", "p60", "pOn", "pOff"].forEach(id => $(id).addEventListener("click", () => act("/api/kj-pause", { minutes: Number($(id).dataset.m) })));
+$("refreshBtn").addEventListener("click", async () => {
+  const b = $("refreshBtn"); b.disabled = true; b.textContent = "Refreshing…";
+  await load();
+  b.disabled = false; b.textContent = "✓ Updated"; setTimeout(() => b.textContent = "↻ Refresh", 1500);
+});
+$("toggleOpen").addEventListener("click", () => act("/api/kj-open", { open: !state.open }));
+/* Add a singer: search people who signed up before, and songs/artists like the customer app
+   (our song list first, then Apple Music / MusicBrainz) */
+(function(){
+  let lib = []; fetch("/songs.json").then(r => r.json()).then(j => lib = j).catch(() => {});
+  const nz = v => String(v || "").replace(/[\u2018\u2019\u02bc]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
+  const box = id => $(id), hide = () => { ["nameSug", "songSug", "artSug"].forEach(i => $(i).hidden = true); };
+  function fill(id, items){
+    const b = box(id); b.innerHTML = "";
+    items.forEach(([title, sub, pick]) => { const x = document.createElement("button"); x.type = "button"; x.textContent = title; if(sub){ const s = document.createElement("span"); s.textContent = sub; x.appendChild(s); } x.addEventListener("click", () => { pick(); hide(); }); b.appendChild(x); });
+    b.hidden = !items.length;
+  }
+  const deb = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+  const people = deb(async () => {
+    const q = $("addName").value.trim(); if(q.length < 2){ $("nameSug").hidden = true; return; }
+    let j = { people: [] }; try{ j = await api("/api/kj/people?q=" + encodeURIComponent(q)); }catch(e){ return; }
+    if($("addName").value.trim() !== q) return;
+    fill("nameSug", j.people.map(p => [p.name, (p.inLine ? "In line now: " : "Last sang: ") + p.song + (p.artist ? " – " + p.artist : ""), () => { $("addName").value = p.name; $("addSong").focus(); }]));
+  }, 250);
+  const songs = deb(async () => {
+    const q = nz($("addSong").value), art = nz($("addArtist").value); if(q.length < 2){ $("songSug").hidden = true; return; }
+    const hits = lib.filter(x => nz(x.t).includes(q) && (!art || nz(x.a) === art)).slice(0, 6).map(x => [x.t, x.a, () => { $("addSong").value = x.t; $("addArtist").value = x.a; }]);
+    fill("songSug", hits);
+    if(q.length >= 3 && hits.length < 6){
+      let more = []; try{ more = (await (await fetch("/api/songsearch?q=" + encodeURIComponent(q + (art ? " " + art : "")))).json()).songs || []; }catch(e){}
+      if(nz($("addSong").value) !== q) return;
+      const have = new Set(hits.map(h => nz(h[0] + h[1])));
+      fill("songSug", hits.concat(more.filter(x => !have.has(nz(x.t + x.a))).slice(0, 8 - hits.length).map(x => [x.t, x.a, () => { $("addSong").value = x.t; $("addArtist").value = x.a; }])));
+    }
+  }, 300);
+  const artists = deb(async () => {
+    const q = nz($("addArtist").value); if(q.length < 2){ $("artSug").hidden = true; return; }
+    const c = new Map(); lib.forEach(x => { if(nz(x.a).includes(q)) c.set(x.a, (c.get(x.a) || 0) + 1); });
+    let list = [...c.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([a, n]) => [a, n + " song" + (n > 1 ? "s" : ""), () => { $("addArtist").value = a; $("addSong").focus(); }]);
+    fill("artSug", list);
+    if(q.length >= 3 && list.length < 6){
+      let more = []; try{ more = (await (await fetch("/api/songsearch?by=artist&q=" + encodeURIComponent(q))).json()).songs || []; }catch(e){}
+      if(nz($("addArtist").value) !== q) return;
+      const names = [...new Set(more.map(x => x.a))].filter(a => !c.has(a)).slice(0, 6 - list.length);
+      fill("artSug", list.concat(names.map(a => [a, "", () => { $("addArtist").value = a; $("addSong").focus(); }])));
+    }
+  }, 300);
+  $("addName").addEventListener("input", people);
+  $("addSong").addEventListener("input", songs);
+  $("addArtist").addEventListener("input", artists);
+  document.addEventListener("click", e => { if(!e.target.closest(".afield")) hide(); });
+  $("addForm").addEventListener("submit", hide, true);
+})();
+$("addForm").addEventListener("submit", async e => {
+  e.preventDefault(); $("addErr").textContent = "";
+  const body = { name: $("addName").value.trim(), song: $("addSong").value.trim(), artist: $("addArtist").value.trim(), spot: $("addSpot").value };
+  if(!body.name){ $("addErr").textContent = "Enter the singer's name."; return; }
+  if(!body.song){ $("addErr").textContent = "Enter the song."; return; }
+  try{ const j = await api("/api/kj/add", body);
+    if(j && j.autoLocked){ $("err").textContent = "🔒 " + body.name + " took a locked spot, so their spot is locked too."; errUntil = Date.now() + 6000; }
+    else if(body.spot && confirm("🔒 Lock " + body.name + "'s spot at #" + body.spot + "?\n\nOK = lock it (nobody can push them down)\nCancel = leave it unlocked")) await api("/api/kj/" + j.id + "/lock", {}); $("addName").value = ""; $("addSong").value = ""; $("addArtist").value = ""; $("addSpot").value = ""; load(); }
+  catch(err){ if(err.message !== "pin") $("addErr").textContent = err.message; }
+});
+$("toggleLyrics").addEventListener("click", () => act("/api/kj-lyrics", { on: state.lyrics === false }));
+$("multiChk").addEventListener("change", () => act("/api/kj-multi", { on: !$("multiChk").checked }));
+$("togglePhone").addEventListener("click", () => act("/api/kj-phone", { on: !state.phoneSignin }));
+$("togglePhotoReview").addEventListener("click", () => act("/api/kj-photoreview", { on: !state.photoReview }));
+$("newNight").addEventListener("click", () => $("nnConfirm").hidden = false);
+$("nnNo").addEventListener("click", () => $("nnConfirm").hidden = true);
+$("nnYes").addEventListener("click", () => { $("nnConfirm").hidden = true; act("/api/kj-newnight"); });
+/* ---------- install as an app ---------- */
+if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+(function(){
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  let hidden = false; try{ hidden = sessionStorage.getItem("dive_kj_install_x") === "1"; }catch(e){}
+  if(standalone) return;
+  if($("getApp")) $("getApp").hidden = !hidden;
+  if(hidden) $("installBar").hidden = true;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent), iosChrome = ios && /CriOS/i.test(navigator.userAgent);
+  if(iosChrome){ $("iosGuide").classList.add("top"); $("iosShareWhere").textContent = "at the top right"; }
+  let promptEvt = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); promptEvt = e; $("installBar").hidden = false; $("installHow").textContent = "Open the queue in one tap."; $("installBtn").hidden = false; });
+  if(ios){ $("installBar").hidden = false; }
+  $("installBtn").addEventListener("click", async () => {
+    if(ios){ $("iosGuide").hidden = false; return; }
+    if(promptEvt){ promptEvt.prompt(); const r = await promptEvt.userChoice; if(r.outcome === "accepted") $("installBar").hidden = true; promptEvt = null; return; }
+    $("installHow").innerHTML = ios ? "1. Tap <b style='display:inline'>Share</b> <span aria-hidden='true'>⬆︎</span> at the bottom of Safari<br>2. Tap <b style='display:inline'>Add to Home Screen</b>" : "Tap your browser menu ⋮, then <b style='display:inline'>Install app</b>.";
+    $("installBtn").hidden = true;
+  });
+  $("iosGuideX").addEventListener("click", () => { $("iosGuide").hidden = true; });
+  $("iosGuide").addEventListener("click", e => { if(e.target.id === "iosGuide") $("iosGuide").hidden = true; });
+  $("installX").addEventListener("click", () => { $("installBar").hidden = true; try{ sessionStorage.setItem("dive_kj_install_x", "1"); }catch(e){} if($("getApp")) $("getApp").hidden = false; });
+  window.addEventListener("appinstalled", () => { $("installBar").hidden = true; });
+})();
+
+/* ---------- who's signed in, and the owner's host list ---------- */
+async function loadHosts(){
+  try{
+    const j = await api("/api/kj/hosts"), ol = $("hostList"); ol.innerHTML = "";
+    if(!j.hosts.length){ const li = document.createElement("li"); li.className = "empty"; li.textContent = "No hosts yet. Add one below."; ol.appendChild(li); }
+    j.hosts.forEach(h => {
+      const li = document.createElement("li"), t = document.createElement("div"); t.className = "t";
+      const b = document.createElement("b"); b.textContent = h.name; const sp = document.createElement("span"); sp.textContent = (h.role === "staff" ? "Old staff login (can't sign in, remove it)" : h.off ? "DJ · access OFF" : "DJ") + " · PIN " + h.pin;
+      t.append(b, sp); const x = document.createElement("button"); x.className = "danger"; x.textContent = "Remove";
+      x.addEventListener("click", async () => {
+        if(x.dataset.armed !== "1"){ x.dataset.armed = "1"; x.textContent = "Tap to confirm"; setTimeout(() => { x.dataset.armed = ""; x.textContent = "Remove"; }, 4000); return; }
+        await api("/api/kj/hosts/remove", { name: h.name }).catch(() => {}); loadHosts();
+      });
+      const rs = document.createElement("button"); rs.textContent = "Reset PIN";
+      rs.addEventListener("click", async () => {
+        const np = prompt("New starting PIN for " + h.name + " (4 to 8 digits). They'll make their own when they sign in.", (state && state.tempPin) || "");
+        if(np === null) return;
+        try{ await api("/api/kj/hosts/reset", { name: h.name, pin: np.trim() }); loadHosts(); alert(h.name + "'s PIN is reset. Their DJ session was closed."); }
+        catch(err){ if(err.message !== "pin") alert(err.message); }
+      });
+      const acts = document.createElement("span"); acts.className = "row"; acts.style.gap = "6px"; acts.append(rs, x);
+      if(state && state.me && state.me.admin){
+        const ac = document.createElement("button"); ac.textContent = h.off ? "Turn on" : "Turn off";
+        ac.title = h.off ? "Let this DJ sign in again" : "Sign this DJ out and block their login. Name and PIN stay saved.";
+        ac.addEventListener("click", async () => { try{ await api("/api/kj/hosts/access", { name: h.name, on: !!h.off }); loadHosts(); }catch(err){ if(err.message !== "pin") alert(err.message); } });
+        const lg = document.createElement("button"); lg.textContent = h.logo ? "Change logo" : "Add logo";
+        lg.addEventListener("click", () => {
+          const f = document.createElement("input"); f.type = "file"; f.accept = "image/*";
+          f.addEventListener("change", () => {
+            const file = f.files && f.files[0]; if(!file) return;
+            const img = new Image(), u = URL.createObjectURL(file);
+            img.onload = async () => {
+              const S = 256, c = document.createElement("canvas"); c.width = c.height = S; const x = c.getContext("2d");
+              const r = Math.min(img.width, img.height); x.drawImage(img, (img.width - r) / 2, (img.height - r) / 2, r, r, 0, 0, S, S); URL.revokeObjectURL(u);
+              try{ await api("/api/kj/hosts/logo", { name: h.name, data: c.toDataURL("image/jpeg", 0.85) }); loadHosts(); }catch(err){ if(err.message !== "pin") alert(err.message); }
+            };
+            img.onerror = () => alert("That picture didn't open. Try another."); img.src = u;
+          }); f.click();
+        });
+        acts.prepend(lg, ac);
+        if(h.logo){ const im = document.createElement("img"); im.src = "/api/djlogo?n=" + encodeURIComponent(h.name) + "&t=" + Date.now(); im.alt = ""; im.style.cssText = "width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px"; t.prepend(im); }
+      }
+      li.append(t, acts); ol.appendChild(li);
+    });
+  }catch(e){}
+}
+let hostsLoaded = false;
+/* ---------- other bars and DJs: plan, venue, setup ---------- */
+function paintBiz(){
+  const t = state.tenant || {}, p = state.plan || {};
+  $("bizCard").hidden = !!t.house || !t.slug;
+  if(t.house || !t.slug) return;
+  $("planLine").textContent = p.label || ""; $("planLine").style.color = p.active ? (p.days_left != null && p.days_left <= 3 ? "#ffc93c" : "var(--green-hi)") : "var(--warn)";
+  $("setupLink").hidden = !(state.me && state.me.admin);
+  $("venueLine").textContent = t.venue ? "Tonight: " + t.venue : state.hasSpot ? "Location check is set." : "Location check isn't set yet.";
+}
+$("venueBtn").addEventListener("click", () => { $("venueForm").hidden = false; $("venueName").value = (state.tenant || {}).venue || ""; $("venueName").focus(); });
+$("venueSave").addEventListener("click", () => {
+  $("venueErr").textContent = "";
+  if(!navigator.geolocation){ $("venueErr").textContent = "This phone can't share location."; return; }
+  $("venueSave").textContent = "Finding you…";
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try{ await api("/api/kj/venue", { venue: $("venueName").value.trim(), lat: pos.coords.latitude, lng: pos.coords.longitude }); $("venueForm").hidden = true; load(); }
+    catch(e){ if(e.message !== "pin") $("venueErr").textContent = e.message; }
+    $("venueSave").textContent = "Use my location";
+  }, () => { $("venueErr").textContent = "Couldn't get your location. Allow location for this site."; $("venueSave").textContent = "Use my location"; }, { enableHighAccuracy: true, timeout: 15000 });
+});
+function paintMe(){
+  if(!state || !state.me) return;
+  $("meLine").textContent = "Signed in as " + state.me.name;
+  $("ownerLink").hidden = !state.me.admin;
+  $("crowdCard").hidden = !(state.signups || state.phones); paintCrowd($("crowd"), state.signups, state.phones);
+  $("hostPin").placeholder = state.tempPin ? "Start PIN " + state.tempPin : "PIN";
+  $("hostsCard").hidden = state.me.role === "dj"; $("hostForm").hidden = !state.me.admin;
+  $("myPinBtn").hidden = false; $("myPinBtn").textContent = state.me.admin ? "Change house PIN" : "Change my PIN";
+  $("meLine").textContent = "Signed in as " + state.me.name + (state.me.role === "dj" ? " (DJ)" : " (house)");
+  if(state.me.role !== "dj" && !hostsLoaded){ hostsLoaded = true; loadHosts(); }
+}
+$("hostForm").addEventListener("submit", async e => {
+  e.preventDefault(); $("hostErr").textContent = "";
+  const name = $("hostName").value.trim(), pin = $("hostPin").value.trim();
+  if(!name){ $("hostErr").textContent = "Enter the host's name."; return; }
+  if(!(pin === "" && state && state.tempPin) && !/^\d{4,8}$/.test(pin)){ $("hostErr").textContent = "PIN must be 4 to 8 digits."; return; }
+  try{ await api("/api/kj/hosts", { name, pin: pin || (state && state.tempPin) || "" }); $("hostName").value = ""; $("hostPin").value = ""; loadHosts(); }
+  catch(err){ $("hostErr").textContent = err.message; }
+});
+$("fpForm").addEventListener("submit", async e => {
+  e.preventDefault(); const n = fpNeeds(), a = $("fpPin").value.trim(), b = $("fpPin2").value.trim();
+  if(n.pin){
+    if(!/^\d{4,8}$/.test(a)){ $("fpErr").textContent = "PIN must be 4 to 8 digits."; return; }
+    if(a !== b){ $("fpErr").textContent = "The two PINs don't match."; return; }
+    if(a === pin){ $("fpErr").textContent = "Pick a PIN that's different from the starting one."; return; }
+  }
+  if(n.terms && !$("fpAgree").checked){ $("fpErr").textContent = "Check the box to agree to the terms."; return; }
+  try{
+    if(n.terms) await api("/api/kj/host-terms", { agree: true, v: state.hostTermsV });
+    if(n.pin){ await api("/api/kj/my-pin", { pin: a }); pin = a; try{ sessionStorage.setItem("kj_pin", a); }catch(er){} }
+    $("forcePin").hidden = true; load(); loadTips(); hostsLoaded = false;
+  }catch(err){ if(err.message !== "pin") $("fpErr").textContent = err.message; }
+});
+$("fpOut").addEventListener("click", async () => { $("forcePin").hidden = true; try{ await api("/api/kj/logout", {}); }catch(e){} logout(""); });
+$("myPinBtn").addEventListener("click", () => { $("myPhoneForm").hidden = !$("myPhoneForm").hidden; if(state){ $("myPhoneMsg").textContent = state.myPhone ? "On file: " + state.myPhone : "No phone on file yet"; } $("myPinForm").hidden = !$("myPinForm").hidden; $("myPinErr").textContent = ""; });
+$("myPinForm").addEventListener("submit", async e => {
+  e.preventDefault(); const p = $("myPin").value.trim();
+  if(!/^\d{4,8}$/.test(p)){ $("myPinErr").textContent = "PIN must be 4 to 8 digits."; return; }
+  try{ await api("/api/kj/my-pin", { pin: p }); pin = p; try{ sessionStorage.setItem("kj_pin", p); }catch(er){} $("myPin").value = ""; $("myPinForm").hidden = true; $("meLine").textContent = (state.me.admin ? "House PIN changed. Tell your staff who use it. " : "PIN changed. ") + "Signed in as " + state.me.name;  loadTips(); }
+  catch(err){ $("myPinErr").textContent = err.message; }
+});
+$("signOut").addEventListener("click", async () => { try{ await api("/api/kj/logout", {}); }catch(e){} hostsLoaded = false; logout(""); });
+
+/* ---------- tips ---------- */
+let tips = null;
+const $$m = v => "$" + (Number.isInteger(v) ? v : v.toFixed(2));
+const TIPN = { cashapp: "Cash App", venmo: "Venmo", paypal: "PayPal", zelle: "Zelle", apple: "Apple Cash" };
+async function loadTips(){
+  try{ tips = await api("/api/kj/tips"); }catch(e){ return; }
+  const me = state && state.me ? state.me.name : "", mineOn = tips.on && tips.host === me, has = Object.keys(tips.mine).length > 0;
+  $("tipState").textContent = tips.on ? "going to " + (tips.host === me ? "you" : tips.host) : "off";
+  $("staffTips").hidden = !(tips.house && tips.dj); $("staffTips").textContent = tips.stopped ? "Turn tips back on" : "Stop tips tonight";
+  $("tipTake").textContent = mineOn ? "Stop taking tips" : has ? "Send tips to me tonight" : "Add your links to take tips";
+  $("tipTake").className = mineOn ? "" : "next";
+  $("tipTotal").textContent = $$m(tips.total);
+  $("tipTotLbl").textContent = tips.owner ? "all DJs, tapped tonight · confirm in their apps" : "your tips tonight · check your apps to confirm";
+  // staff don't see tip money; only the owner (all DJs) and each DJ (their own)
+  $("tipMoneyRow").hidden = !tips.seeMoney; $("tipList").hidden = !tips.seeMoney;
+  const bd = $("tipByDj"); bd.innerHTML = ""; bd.hidden = !tips.owner;
+  if(tips.owner){
+    const ks = Object.keys(tips.byDj || {}).sort((a, b) => tips.byDj[b] - tips.byDj[a]);
+    const lab = document.createElement("small"); lab.textContent = ks.length ? "By DJ:" : "No DJ tips yet tonight."; bd.appendChild(lab);
+    ks.forEach(k => { const sp = document.createElement("span"); sp.append(k + " "); const b = document.createElement("b"); b.textContent = $$m(tips.byDj[k]); sp.appendChild(b); bd.appendChild(sp); });
+    const a = document.createElement("a"); a.href = "/stats"; a.textContent = "Past nights in Analytics →"; bd.appendChild(a);
+  }
+  $("tipHouse").hidden = !tips.house; $("tipLinksBtn").hidden = !!tips.house; $("tipTake").hidden = false;
+  $("djOnRow").hidden = !tips.house; $("djOnTxt").textContent = tips.dj ? "🎧 DJ on now: " + tips.dj : "No DJ signed in right now.";
+  $("kickDj").hidden = !tips.dj;
+  $("tipsH").textContent = tips.house ? "Tonight's DJ" : "Tips";
+  $("tipNeedPin").hidden = !tips.needPin; $("tipPinBtn").hidden = !tips.needPin;
+  if(tips.needPin){ $("tipLinksBtn").hidden = true; $("tipLinksForm").hidden = true; $("tipTake").hidden = true; }
+  if(tips.house){ $("tipLinksForm").hidden = true; $("tipTake").hidden = true; }
+  const by = {}; tips.tonight.forEach(t => by[t.who] = (by[t.who] || 0) + t.amount);
+  const topWho = Object.keys(by).sort((a, b) => by[b] - by[a])[0];
+  const ol = $("tipList"); ol.innerHTML = "";
+  if(!tips.tonight.length){ const li = document.createElement("li"); li.className = "empty"; li.textContent = "No tips yet tonight. Give a shout-out to the Tip the DJ button!"; ol.appendChild(li); }
+  tips.tonight.slice(0, 30).forEach(t => {
+    const li = document.createElement("li");
+    const b = document.createElement("b"); b.textContent = (t.who === topWho ? "👑 " : "") + t.name + " · " + $$m(t.amount);
+    const sm = document.createElement("small"); sm.textContent = "  " + TIPN[t.method] + " · " + new Date(t.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + (t.to !== me ? " · to " + t.to : "");
+    li.append(b, sm);
+    if(t.comment){ const q = document.createElement("q"); q.textContent = t.comment; li.appendChild(q); }
+    ol.appendChild(li);
+  });
+  if($("tipLinksForm").hidden){
+    $("tlCash").value = tips.mine.cashapp ? "$" + tips.mine.cashapp : ""; $("tlVenmo").value = tips.mine.venmo ? "@" + tips.mine.venmo : "";
+    $("tlPaypal").value = tips.mine.paypal || ""; $("tlZelle").value = tips.mine.zelle || ""; $("tlApple").value = tips.mine.apple || "";
+  }
+}
+$("staffTips").addEventListener("click", async () => { try{ await api("/api/kj/tips/staff", { on: !!(tips && tips.stopped) }); }catch(e){ if(e.message !== "pin") $("err").textContent = e.message; } loadTips(); });
+$("tipTake").addEventListener("click", async () => {
+  if(!tips) return;
+  const me = state.me.name;
+  if(!Object.keys(tips.mine).length){ $("tipLinksForm").hidden = false; return; }
+  try{ await api("/api/kj/tips/take", { on: !(tips.on && tips.host === me) }); }catch(e){ if(e.message !== "pin") $("err").textContent = e.message; }
+  loadTips();
+});
+$("kickDj").addEventListener("click", async () => {
+  const b = $("kickDj");
+  if(b.dataset.armed !== "1"){ b.dataset.armed = "1"; b.textContent = "Tap to confirm"; setTimeout(() => { b.dataset.armed = ""; b.textContent = "Close DJ session"; }, 4000); return; }
+  b.dataset.armed = ""; b.textContent = "Close DJ session";
+  try{ await api("/api/kj/kick", {}); }catch(e){ if(e.message !== "pin") $("err").textContent = e.message; }
+  loadTips();
+});
+$("tipPinBtn").addEventListener("click", () => { $("myPinForm").hidden = false; $("myPinErr").textContent = ""; $("myPinForm").scrollIntoView({ behavior: "smooth", block: "center" }); $("myPin").focus(); });
+$("tipLinksBtn").addEventListener("click", () => { $("tipLinksForm").hidden = !$("tipLinksForm").hidden; $("tipLinksErr").textContent = ""; });
+$("tipLinksForm").addEventListener("submit", async e => {
+  e.preventDefault(); $("tipLinksErr").textContent = "";
+  try{
+    await api("/api/kj/tips/links", { cashapp: $("tlCash").value, venmo: $("tlVenmo").value, paypal: $("tlPaypal").value, zelle: $("tlZelle").value, apple: $("tlApple").value });
+    $("tipLinksForm").hidden = true; loadTips();
+  }catch(err){ if(err.message !== "pin") $("tipLinksErr").textContent = err.message; }
+});
+setInterval(() => { if(pin && !$("panel").hidden) loadTips(); }, 8000);
+if(window.diveForgotLink) diveForgotLink($("pinForm"), { kinds: [{ k: "host", label: "My DJ login", name: true }, { k: "house", label: "The house PIN" }] });
+$("myPhoneForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  try{ const j = await api("/api/kj/my-phone", { phone: $("myPhone").value }); $("myPhoneMsg").textContent = "Saved ✓ " + j.phone; $("myPhone").value = ""; }
+  catch(er){ if(er.message !== "pin") $("myPhoneMsg").textContent = er.message; }
+});
+if(pin) start();
+
+/* ---------- stay fresh when the app comes back ---------- */
+(function(){
+  let hiddenAt = 0;
+  const back = () => {
+    if(hiddenAt && Date.now() - hiddenAt > 5 * 60 * 1000){ location.reload(); return; }
+    hiddenAt = 0; if(pin) load();
+  };
+  document.addEventListener("visibilitychange", () => { if(document.visibilityState === "hidden") hiddenAt = Date.now(); else back(); });
+  window.addEventListener("pageshow", e => { if(e.persisted) location.reload(); });
+  window.addEventListener("focus", back);
+  window.addEventListener("online", back);
+})();
+
+$("bumpPriceRow").addEventListener("submit", async e => {
+  e.preventDefault(); const v = parseInt($("bumpPriceIn").value, 10);
+  try{ await api("/api/kj/bump-price", { price: v }); $("bumpPriceMsg").textContent = "Saved ✓ $" + v + " a spot"; $("bumpPriceIn").blur(); }
+  catch(er){ if(er.message !== "pin") $("bumpPriceMsg").textContent = er.message; }
+});
+</script>
+</body>
+</html>

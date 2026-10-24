@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>App Owner</title>
+<link rel="icon" href="/logo.png">
+<link rel="manifest" href="/staff-manifest.json">
+<link rel="apple-touch-icon" href="/staff-apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="App Owner">
+<meta name="theme-color" content="#0a0c0a">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700;800&family=Outfit:wght@400;500;600&display=swap">
+<style>
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+
+/* single dark look matching the bar's green-on-black sign; one column, link rows you can tap or copy */
+:root{--bg:#0a0c0a;--panel:#131713;--line:#263026;--green:#39b54a;--green-hi:#62d672;--ink:#eef3ee;--ink-2:#9fae9f;
+--slab:"Roboto Slab",Rockwell,Georgia,serif;--body:"Outfit",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+main{max-width:560px;margin:0 auto;padding:20px 16px 40px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-direction:column;gap:12px}
+h1{font-family:var(--slab);font-weight:800;font-size:26px;margin:0;line-height:1.1;text-wrap:balance}
+.copyall{background:var(--green);color:#041206;border:0;border-radius:999px;padding:14px 18px;font-family:var(--slab);font-weight:800;font-size:17px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer}
+.copyall:focus-visible,.cp:focus-visible,a:focus-visible{outline:3px solid var(--green-hi);outline-offset:2px}
+.msg{min-height:20px;margin:0;font-size:14px;color:var(--green-hi)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:2px}
+h2{font-family:var(--slab);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--green-hi);margin:0 0 6px}
+h2 span{font-family:var(--body);font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink-2)}
+.ln{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.ln:first-of-type{border-top:0}
+.ln .t{flex:1;min-width:0}
+.ln b{display:block;font-weight:600}
+.ln a{color:var(--green-hi);font-size:14px;overflow-wrap:anywhere}
+.cp{flex:none;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.cp.done{border-color:var(--green);color:var(--green-hi)}
+ol,ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+#raw{position:absolute;left:-9999px}
+.lock{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.lbox{width:100%;max-width:340px;background:var(--panel);border:1px solid var(--green);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.lbox img{width:72px;margin:0 auto}
+.lbox p{margin:0;color:var(--ink-2)}
+.lbox input{font:inherit;font-size:22px;letter-spacing:.3em;text-align:center;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.lbox .err{color:#ff6b6b;min-height:20px;font-size:14px}
+.lockbtn{align-self:flex-start;background:none;border:1px solid var(--line);color:var(--ink-2);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.group{display:flex;flex-direction:column;gap:10px;border-left:3px solid var(--green);padding-left:12px}
+.group[data-who="DJ"]{border-color:#4da3ff}.group[data-who="Staff"]{border-color:#ffc93c}
+.ghd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0 2px}
+.ghd h3{font-family:var(--slab);font-weight:800;font-size:21px;margin:0;line-height:1.1}
+.ghd p{margin:2px 0 0;font-size:13px;color:var(--ink-2)}
+.cpg{flex:none;background:var(--green);color:#041206;border:0;border-radius:999px;padding:10px 14px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.group[data-who="DJ"] .cpg{background:#4da3ff}.group[data-who="Staff"] .cpg{background:#ffc93c}
+.cpg.done{outline:2px solid var(--ink)}
+.gbtns{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.cpt{background:none;border:0;color:var(--ink-2);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:2px}
+/* a shared group link: just that group's links, no owner controls */
+body.shared .group{border-left:0;padding-left:0}
+body.shared #installBar,body.shared .ghd p,body.shared .gbtns,body.shared .ownonly,body.shared #copyAll,body.shared #relock,body.shared #intro{display:none!important}
+
+:root{--panel-2:#1b211b;--wall:#0a0c0a}
+.brand{display:flex;align-items:center;gap:12px}.brand img{width:52px}
+.install{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--green);border-radius:16px;padding:12px 14px}
+.install img{width:48px;height:48px;border-radius:12px;flex:none}
+.install .tx{flex:1;min-width:0;font-size:14px;line-height:1.35}
+.install .tx b{display:block;font-size:16px}
+.install button{font:inherit;font-weight:700;border-radius:999px;padding:10px 16px;border:0;background:var(--green);color:#041206;cursor:pointer;flex:none}
+.install .x{background:none;color:var(--ink-2);padding:6px;font-size:20px;font-weight:400}
+.iosguide{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:24px 20px calc(70px + env(safe-area-inset-bottom,0px));text-align:center;color:#fff}
+.iosguide .box{background:var(--panel);border:2px solid var(--green);border-radius:18px;padding:18px;max-width:340px;display:flex;flex-direction:column;gap:12px}
+.iosguide .step{display:flex;gap:12px;align-items:center;text-align:left;font-size:17px;line-height:1.3}
+.iosguide .n{width:30px;height:30px;border-radius:50%;background:var(--green);color:#041206;font-weight:800;display:grid;place-items:center;flex:none}
+.iosguide .shareic{display:inline-grid;place-items:center;width:30px;height:30px;border:2px solid #4da3ff;border-radius:8px;color:#4da3ff;font-size:18px;vertical-align:middle}
+.iosguide .arrow{font-size:64px;line-height:1;color:var(--green-hi);margin-top:14px;animation:bob 1s ease-in-out infinite}
+.iosguide .close{background:none;border:0;color:var(--ink-2);font:inherit;text-decoration:underline;padding:6px}
+@keyframes bob{50%{transform:translateY(12px)}}
+@media (prefers-reduced-motion:reduce){.iosguide .arrow{animation:none}}
+.iosguide.top{justify-content:flex-start;padding-top:calc(24px + env(safe-area-inset-top,0px))}
+.iosguide.top .arrow{order:-1;align-self:flex-end;margin:0 10px 8px 0}
+.iosguide.top .arrow::before{content:"⬆"}
+.iosguide.top .arrow{font-size:0}.iosguide.top .arrow::before{font-size:64px}
+body{padding-top:calc(52px + env(safe-area-inset-top))}
+</style>
+<script src="/forgot.js"></script>
+</head>
+<body>
+<div class="lock" id="lock" hidden>
+  <form class="lbox" id="lockForm" novalidate>
+    <img src="/logo.png" alt="">
+    <h1>Owner only</h1>
+    <p>Enter your list PIN to open the owner list.</p>
+    <input id="lockPin" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" aria-label="List PIN" placeholder="List PIN">
+    <button type="submit" class="copyall">Open</button>
+    <p class="err" id="lockErr" role="alert"></p>
+  </form>
+</div>
+<main id="main" hidden>
+  <div class="install" id="installBar" hidden>
+    <img src="/staff-icon-192.png" alt="">
+    <div class="tx"><b>Get your App Owner app</b><span id="installHow">Open your owner list in one tap.</span></div>
+    <button id="installBtn" type="button">Add</button>
+    <button class="x" id="installX" type="button" aria-label="Hide">×</button>
+  </div>
+  <header>
+    <div class="brand"><img src="/logo.png" alt="The Dive on 495"><h1 id="pageTitle">Karaoke Owner List</h1></div>
+    <button class="copyall" id="copyAll" type="button">Copy whole list</button>
+    <button class="lockbtn" id="relock" type="button">🔒 Lock this list</button>
+    <a id="liveBtn" href="/watch" style="position:fixed;top:calc(8px + env(safe-area-inset-top));right:8px;z-index:9999;background:#39b54a;color:#0b0f0b;text-decoration:none;font-weight:800;font-size:15px;padding:10px 16px;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,.6)">📺 Live view</a>
+    <a class="copyall" id="statsBtn" href="/stats" style="background:#ffc93c;color:#111;text-decoration:none;text-align:center;font-weight:800">📊 Analytics &amp; singer lookup</a>
+    <p class="msg" id="msg" role="status"></p>
+    <p id="intro" style="margin:0;font-size:14px;color:var(--ink-2)">Each group has its own send button, so you only send people what they need. Every link is its own app: open it and tap <b>Add</b> to put it on the home screen.</p>
+  </header>
+
+  <div class="group" data-who="Customer" data-key="customers">
+    <div class="ghd"><div><h3>👥 Customers</h3><p>Share with guests</p></div><span class="gbtns"><button class="cpg" type="button">Send customer link</button><button class="cpt" type="button">Copy as text</button></span></div>
+  <section>
+    <h2>Links</h2>
+    <div class="ln"><div class="t"><b>Sign up</b><a href="/">the-dive-karaoke.onrender.com</a></div><button class="cp" type="button">Copy</button></div>
+    <div class="ln"><div class="t"><b>Wall of Fame</b><a href="/wall">the-dive-karaoke.onrender.com/wall</a></div><button class="cp" type="button">Copy</button></div>
+    <div class="ln"><div class="t"><b>Terms &amp; Privacy</b><a href="/terms">the-dive-karaoke.onrender.com/terms</a></div><button class="cp" type="button">Copy</button></div>
+  </section>
+  </div>
+
+  <div class="group" data-who="DJ" data-key="dj">
+    <div class="ghd"><div><h3>🎧 DJs</h3><p>Send to DJs only</p></div><span class="gbtns"><button class="cpg" type="button">Send DJ link</button><button class="cpt" type="button">Copy as text</button></span></div>
+  <section>
+    <h2>Links <span>· sign in with your own PIN</span></h2>
+    <div class="ln"><div class="t"><b>Queue</b><a href="/kj">the-dive-karaoke.onrender.com/kj</a></div><button class="cp" type="button">Copy</button></div>
+    <div class="ln"><div class="t"><b>Spin wheel</b><a href="/wheel">the-dive-karaoke.onrender.com/wheel</a></div><button class="cp" type="button">Copy</button></div>
+    <div class="ln"><div class="t"><b>TV screen</b><a href="/tv">the-dive-karaoke.onrender.com/tv</a></div><button class="cp" type="button">Copy</button></div>
+  </section>
+  <section>
+    <h2>Sign in</h2>
+    <ol><li>Be at the bar and allow location. Only one DJ at a time.</li><li>Sign in with the starting PIN the owner gave you. It asks you to make your own PIN and agree to the Host, DJ &amp; Staff Terms right away.</li><li>In the <b>Tips</b> card, save your payment links once. After that, tips turn on by themselves whenever you're the DJ signed in.</li></ol>
+  </section>
+  <section>
+    <h2>During the night</h2>
+    <ul><li><b>Next singer</b> moves the line</li><li><b>Pause</b> for breaks</li><li><b>Fix name</b> if someone signs up wrong</li><li><b>Add a singer</b> for guests without the app: name, song, pick their spot in line. <b>Move to #</b> puts anyone at any spot.</li><li>Bad photo? Tap it, then <b>🙈 Blur now</b>. It's off the TV and wheel instantly.</li><li><b>Lyrics: on / off</b> in Night controls hides the lyrics buttons on guests' phones.</li><li>Cast the <b>TV screen</b> or the <b>Spin wheel</b> to the bar TV.</li><li>While you take tips, everyone with the app gets a "Tip the DJ?" card after each song.</li></ul>
+  </section>
+  <section>
+    <h2>End of night</h2>
+    <ul><li>Tap <b>Stop taking tips</b>, then <b>Sign out</b>. Leaving the bar also signs you out.</li></ul>
+  </section>
+  </div>
+
+  <div class="group" data-who="Bar owner" data-key="bar">
+    <div class="ghd"><div><h3>🏠 Bar owner &amp; managers</h3><p>Tips, move-ups, close the DJ's night</p></div><span class="gbtns"><button class="cpg" type="button">Send bar owner link</button><button class="cpt" type="button">Copy as text</button></span></div>
+  <section>
+    <h2>Links <span>· owner PIN, or a manager's own login</span></h2>
+    <div class="ln"><div class="t"><b>Bar Owner app</b><a href="/bar">the-dive-karaoke.onrender.com/bar</a></div><button class="cp" type="button">Copy</button></div>
+  </section>
+  <section>
+    <h2>What's in it</h2>
+    <ul><li>Tonight's tips for every DJ, by DJ and by guest, plus the last 30 days.</li><li><b>Close the DJ's night</b> if they forgot to sign out, and <b>Stop tips tonight</b>.</li><li>Paid move-ups (lock your spot) with an on/off switch.</li><li>The lineup, sign-ups, and who posted to social media.</li><li>Managers: type your name and your own PIN. Only staff logins the owner made a manager can open it.</li></ul>
+  </section>
+  </div>
+
+  <div class="group" data-who="Owner" data-key="owner">
+    <div class="ghd"><div><h3>👑 Owner notes</h3><p>For you only</p></div></div>
+  <section class="ownonly">
+    <h2>Owner only <span>· house PIN</span></h2>
+    <ul><li>Add DJs in the <b>Hosts</b> card with a starting PIN. They must make their own PIN the first time they sign in.</li><li><b>Live view</b> (<a href="/watch">/watch</a>, your owner list PIN): the lineup and tonight's tips for every DJ, view only.</li><li>Never share the house PIN. Give everyone their own login. Customers never need a PIN: they use the QR code or the link.</li><li>Tip money is only in the <b>Bar Owner app</b> (<a href="/bar">/bar</a>): your owner list PIN, or the own login of any staff you tap <b>Make manager</b> on. Each DJ sees only their own tips on the host page. Staff and the house PIN don't see tips.</li></ul>
+  </section>
+  </div>
+</main>
+<div class="iosguide" id="iosGuide" hidden role="dialog" aria-label="Add The Dive app">
+  <div class="box">
+    <div class="step"><span class="n">1</span><span>Tap the <span class="shareic" aria-hidden="true">⬆︎</span> <b>Share</b> button <span id="iosShareWhere">below</span></span></div>
+    <div class="step"><span class="n">2</span><span>Scroll down, tap <b>Add to Home Screen</b></span></div>
+    <div class="step"><span class="n">3</span><span>Tap <b>Add</b>. Done!</span></div>
+    <button class="close" id="iosGuideX" type="button">Close</button>
+  </div>
+  <div class="arrow" aria-hidden="true">⬇</div>
+<textarea id="raw" aria-hidden="true" tabindex="-1"></textarea>
+<script>
+const $ = id => document.getElementById(id);
+
+/* ---------- owner only: the list PIN opens it; remembered on the owner's phone ---------- */
+const OWN_KEY = "dive_staff_owner_pin";
+document.addEventListener("click", e => { if(e.target.closest("#statsBtn")){ try{ const p = localStorage.getItem(OWN_KEY) || sessionStorage.getItem("dive_staff_pin") || ""; if(p) sessionStorage.setItem("kj_pin", p); }catch(x){} } });
+document.addEventListener("click", e => { if(e.target.closest("#liveBtn")){ try{ const p = localStorage.getItem(OWN_KEY) || sessionStorage.getItem("dive_staff_pin") || ""; if(p) sessionStorage.setItem("watch_pin", p); }catch(x){} } });
+async function isOwner(p){
+  try{ const r = await fetch("/api/staff-list", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: p }), cache: "no-store" }); if(r.status === 429){ $("lockErr").textContent = "Too many tries. Wait 10 minutes."; return false; } return r.ok; }catch(e){ return false; }
+}
+function openList(){ $("lock").hidden = true; $("main").hidden = false; if(!document.body.classList.contains("shared")) ownerPhoneBox(); }
+// owner only: the phone that gets a code if you forget this list PIN
+async function ownerPhoneBox(){
+  let p = ""; try{ p = localStorage.getItem(OWN_KEY) || ""; }catch(e){} if(!p) return;
+  let box = document.getElementById("recBox");
+  if(!box){
+    box = document.createElement("div"); box.id = "recBox";
+    box.style.cssText = "border:1px solid var(--line,#2b352b);border-radius:14px;padding:12px;margin:0 0 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center";
+    box.innerHTML = '<b style="flex:1 1 100%">🔐 Forgot-PIN phone <span id="recNow" style="font-weight:400;color:#9fae9f"></span></b><input id="recPh" inputmode="tel" maxlength="20" placeholder="Your phone" style="flex:1 1 160px;font-size:16px;padding:10px;border-radius:10px;letter-spacing:0"><button type="button" id="recSave">Save</button><span id="recMsg" style="font-size:13px;color:#9fae9f"></span>';
+    $("main").insertBefore(box, $("main").firstChild);
+    $("recSave").addEventListener("click", async () => {
+      try{ const r = await fetch("/api/staff-list/phone", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: p, phone: $("recPh").value }) }); const j = await r.json(); if(!r.ok) throw new Error(j.error || "Didn't save."); $("recMsg").textContent = "Saved ✓"; $("recNow").textContent = "· " + j.phone; $("recPh").value = ""; }
+      catch(e){ $("recMsg").textContent = e.message; }
+    });
+  }
+  try{ const r = await fetch("/api/staff-list/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: p }) }); const j = await r.json(); $("recNow").textContent = j.phone ? "· " + j.phone : "· none yet. Add one so a text can reset this PIN."; }catch(e){}
+}
+function showLock(t){ $("main").hidden = true; $("lock").hidden = false; $("lockErr").textContent = t || ""; $("lockPin").value = ""; $("lockPin").focus(); }
+const LINK_KEY = (location.pathname.match(/\/links\/(customers|dj|bar)\/?$/) || [])[1] || new URLSearchParams(location.search).get("for");
+const SHARED = { customers: "Karaoke Links", dj: "DJ Links", bar: "Bar Owner Links" }[LINK_KEY];
+if(SHARED){
+  // someone opened a group link the owner sent: show only that group, no PIN needed
+  const key = LINK_KEY;
+  document.body.classList.add("shared"); $("pageTitle").textContent = SHARED; document.title = SHARED + " · The Dive";
+  document.querySelectorAll(".group").forEach(g => { g.hidden = g.dataset.key !== key; });
+  openList();
+}
+(async () => {
+  if(SHARED) return;
+  let saved = ""; try{ saved = localStorage.getItem(OWN_KEY) || ""; }catch(e){}
+  if(saved && await isOwner(saved)) openList(); else { try{ localStorage.removeItem(OWN_KEY); }catch(e){} showLock(saved ? "The list PIN changed. Enter the new one." : ""); }
+})();
+$("lockForm").addEventListener("submit", async e => {
+  e.preventDefault(); const p = $("lockPin").value.replace(/\D/g, "");
+  if(!p) return;
+  $("lockErr").textContent = "Checking…";
+  if(await isOwner(p)){ try{ localStorage.setItem(OWN_KEY, p); }catch(er){} openList(); }
+  else if(!$("lockErr").textContent.startsWith("Too many")) showLock("Wrong PIN. Only the owner can open this list.");
+});
+if(window.diveForgotLink) diveForgotLink($("lockForm"), { kinds: [{ k: "list", label: "Owner list PIN" }] });
+$("relock").addEventListener("click", () => { try{ localStorage.removeItem(OWN_KEY); }catch(e){} showLock(""); });
+
+const msg = document.getElementById("msg");
+function sectionText(s){
+  const h = s.querySelector("h2").textContent.trim().toUpperCase();
+  const lines = [...s.querySelectorAll(".ln")].map(l => l.querySelector("b").textContent + ": " + new URL(l.querySelector("a").getAttribute("href"), location.origin).href.replace(/\/$/, ""));
+  const items = [...s.querySelectorAll("li")].map((li, i) => (s.querySelector("ol") ? (i + 1) + ". " : "- ") + li.textContent.trim());
+  return h + "\n" + lines.concat(items).join("\n");
+}
+function groupText(g){
+  if(document.body.classList.contains("shared")) g = document.querySelector(".group:not([hidden])") || g; return "THE DIVE KARAOKE – " + g.querySelector("h3").textContent.replace(/^\W+/, "").trim().toUpperCase() + "\n\n" + [...g.querySelectorAll("section")].map(sectionText).join("\n\n"); }
+function plain(){
+  return "THE DIVE KARAOKE – QUICK LIST\n\n" + [...document.querySelectorAll(".group")].map(g => "== " + g.querySelector("h3").textContent.replace(/^\W+/, "").trim().toUpperCase() + " ==\n\n" + [...g.querySelectorAll("section")].map(sectionText).join("\n\n")).join("\n\n\n");
+}
+async function copy(text, btn, label){
+  let ok = false;
+  try{ await navigator.clipboard.writeText(text); ok = true; }catch(e){
+    const r = document.getElementById("raw"); r.value = text; r.select();
+    try{ ok = document.execCommand("copy"); }catch(_){}
+  }
+  if(btn && ok){ const o = btn.textContent; btn.textContent = "Copied"; btn.classList.add("done"); setTimeout(() => { btn.textContent = o; btn.classList.remove("done"); }, 1500); }
+  msg.textContent = ok ? label + " copied. Paste it into a text." : "Couldn't copy here. Press and hold a link to copy it.";
+}
+document.getElementById("copyAll").addEventListener("click", e => copy(plain(), e.currentTarget, "Whole list"));
+// Send: shares one link that opens just this group's links, same look as this page
+const BASE_PATH = (location.pathname.match(/^\/b\/[a-z0-9-]+/) || [""])[0];
+const groupUrl = g => location.origin + BASE_PATH + "/links/" + g.dataset.key;
+document.querySelectorAll(".cpg").forEach(b => b.addEventListener("click", async () => {
+  const g = b.closest(".group"), url = groupUrl(g), title = "The Dive karaoke: " + g.querySelector("h3").textContent.replace(/^\W+/, "").trim();
+  if(navigator.share){ try{ await navigator.share({ title, text: title, url }); msg.textContent = g.dataset.who + " link sent."; return; }catch(e){ if(e && e.name === "AbortError") return; } }
+  copy(url, b, g.dataset.who + " link");
+}));
+document.querySelectorAll(".cpt").forEach(b => b.addEventListener("click", () => { const g = b.closest(".group"); copy(groupText(g), b, g.dataset.who + " list"); }));
+document.querySelectorAll(".cp").forEach(b => b.addEventListener("click", () => {
+  const l = b.closest(".ln"); copy(new URL(l.querySelector("a").getAttribute("href"), location.origin).href.replace(/\/$/, ""), b, l.querySelector("b").textContent + " link");
+}));
+
+/* ---------- install as an app ---------- */
+if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+(function(){
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  let hidden = false; try{ hidden = sessionStorage.getItem("dive_staff_install_x") === "1"; }catch(e){}
+  if(standalone) return;
+  if($("getApp")) $("getApp").hidden = !hidden;
+  if(hidden) $("installBar").hidden = true;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent), iosChrome = ios && /CriOS/i.test(navigator.userAgent);
+  if(iosChrome){ $("iosGuide").classList.add("top"); $("iosShareWhere").textContent = "at the top right"; }
+  let promptEvt = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); promptEvt = e; $("installBar").hidden = false; $("installHow").textContent = "Open your owner list in one tap."; $("installBtn").hidden = false; });
+  if(ios){ $("installBar").hidden = false; }
+  $("installBtn").addEventListener("click", async () => {
+    if(ios){ $("iosGuide").hidden = false; return; }
+    if(promptEvt){ promptEvt.prompt(); const r = await promptEvt.userChoice; if(r.outcome === "accepted") $("installBar").hidden = true; promptEvt = null; return; }
+    $("installHow").innerHTML = ios ? "1. Tap <b style='display:inline'>Share</b> <span aria-hidden='true'>⬆︎</span> at the bottom of Safari<br>2. Tap <b style='display:inline'>Add to Home Screen</b>" : "Tap your browser menu ⋮, then <b style='display:inline'>Install app</b>.";
+    $("installBtn").hidden = true;
+  });
+  $("iosGuideX").addEventListener("click", () => { $("iosGuide").hidden = true; });
+  $("iosGuide").addEventListener("click", e => { if(e.target.id === "iosGuide") $("iosGuide").hidden = true; });
+  $("installX").addEventListener("click", () => { $("installBar").hidden = true; try{ sessionStorage.setItem("dive_staff_install_x", "1"); }catch(e){} if($("getApp")) $("getApp").hidden = false; });
+  window.addEventListener("appinstalled", () => { $("installBar").hidden = true; });
+})();
+
+
+</script>
+</body>
+</html>
