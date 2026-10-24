@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Setup · The Dive</title>
+<title>Setup · The KJ Total Package App</title>
 <link rel="icon" href="/logo.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@600;800&family=Outfit:wght@400;500;600&display=swap">
 <style>
@@ -44,7 +44,7 @@ a{color:var(--green-hi)}
 </head>
 <body>
 <main>
-  <header><img src="/logo.png" alt="" id="hdrLogo"><h1>Setup</h1><a href="/kj">Host page →</a></header>
+  <header><img src="/logo.png" alt="" id="hdrLogo"><h1>Setup</h1><a href="/kj">KJ page →</a></header>
 
   <section class="card" id="login">
     <h2>Owner PIN</h2>
@@ -104,7 +104,7 @@ a{color:var(--green-hi)}
 
     <section class="card thc">
       <h2>Colors</h2>
-      <p class="hint">Your own look on the sign-up app, TV screen, host page and wall. Start from a preset, then tap any color box to open the full color picker (grid, spectrum or sliders) and set any color you want.</p>
+      <p class="hint">Your own look on the sign-up app, TV screen, KJ page and wall. Start from a preset, then tap any color box to open the full color picker (grid, spectrum or sliders) and set any color you want.</p>
       <div class="row" id="thPresets" style="flex-wrap:wrap;gap:6px"></div>
       <div class="two">
         <div><label for="thAccent">Accent (buttons, headings)</label><input id="thAccent" class="thpick" type="color" value="#39b54a"></div>
@@ -130,7 +130,7 @@ a{color:var(--green-hi)}
       <p class="hint" id="locState"></p>
       <div class="row"><button type="button" id="locBtn">📍 Set to where I am now</button><button type="button" id="locClear">Clear</button></div>
       <div><label for="radius">How close guests must be (meters)</label><input id="radius" type="number" min="50" max="1000" step="10"></div>
-      <p class="hint">150 meters covers most bars and their patio. DJs can also set this each night from the host page.</p>
+      <p class="hint">150 meters covers most bars and their patio. You can also set this each night from your KJ page.</p>
     </section>
 
     <section class="card">
@@ -139,7 +139,7 @@ a{color:var(--green-hi)}
         <div><label for="newPin">New owner PIN (optional)</label><input id="newPin" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>
         <div><label for="newPin2">Type it again</label><input id="newPin2" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>
       </div>
-      <p class="hint">Hosts (up to <span id="hostLimit">2</span>) are added on the host page.</p>
+      <p class="hint">Extra KJ logins (up to <span id="hostLimit">2</span>) are added on your KJ page.</p>
     </section>
 
     <p class="err" id="err" role="alert"></p><p class="ok" id="ok" role="status"></p>
@@ -179,7 +179,7 @@ function paint(j){
   $("price").textContent = j.price; $("payBtn").hidden = p.paid || !j.cardReady; $("portalBtn").hidden = !j.paid;
   if(!j.cardReady && !p.paid) $("planHint").textContent += " Card payments aren't turned on yet. Ask Stemo Enterprises for a code.";
   const L = $("links"); L.innerHTML = "";
-  [["Customer sign-up", j.links.app], ["Host page", j.links.kj], ["TV screen", j.links.tv], ["QR poster", j.links.poster], ["Owner list", j.links.staff]].forEach(([label, url]) => {
+  [["Customer sign-up", j.links.app], ["KJ page", j.links.kj], ["TV screen", j.links.tv], ["QR poster", j.links.poster]].forEach(([label, url]) => {
     const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener";
     const b = document.createElement("b"); b.textContent = label; const s = document.createElement("span"); s.textContent = url.replace(/^https?:\/\//, "");
     a.append(b, s); L.appendChild(a);

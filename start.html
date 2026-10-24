@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Karaoke Sign-Up for Bars &amp; DJs</title>
+<title>The KJ Total Package App</title>
 <link rel="icon" href="/default-logo.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@600;800&family=Outfit:wght@400;500;600&display=swap">
 <style>
@@ -45,20 +45,20 @@ a{color:var(--green-hi)}
 </head>
 <body>
 <main>
-  <h1>Karaoke sign-up for your bar or DJ business</h1>
-  <p class="lead">QR sign-up, a live host queue, TV screen, spin wheel, ads, singer history and analytics, all with your own logo. Guests sign up from their phones. No app store.</p>
-  <div class="price"><span><b>14-day free trial</b>, no card</span><span><b>$199</b>/month after</span><span>2 host logins</span></div>
+  <h1>The KJ Total Package App</h1>
+  <p class="lead">QR sign-up, a live KJ queue, TV screen, spin wheel, ads, singer history and analytics, all with your own logo. Guests sign up from their phones. No app store.</p>
+  <div class="price"><span><b>14-day free trial</b>, no card</span><span><b>$199</b>/month after</span><span>2 KJ logins</span></div>
 
   <form class="card" id="form" novalidate>
-    <h2>1. Who are you?</h2>
-    <div class="seg" role="group" aria-label="Account type">
-      <button type="button" id="tBar" aria-pressed="true">A bar or venue<small>Your place, your location check</small></button>
-      <button type="button" id="tDj" aria-pressed="false">A DJ / KJ business<small>You move venue to venue</small></button>
+    <h2>1. Your KJ business</h2>
+    <div class="seg" role="group" aria-label="Account type" hidden>
+      <button type="button" id="tBar" aria-pressed="false">Bar</button>
+      <button type="button" id="tDj" aria-pressed="true">KJ</button>
     </div>
-    <div><label for="name" id="nameLbl">Bar name</label><input id="name" maxlength="50" autocomplete="organization" placeholder="Joe’s Pub"></div>
+    <div><label for="name" id="nameLbl">KJ business name</label><input id="name" maxlength="50" autocomplete="organization" placeholder="DJ Rico Entertainment"></div>
     <div>
       <label for="slug">Your web name</label>
-      <input id="slug" maxlength="38" autocapitalize="off" autocomplete="off" placeholder="joes-pub">
+      <input id="slug" maxlength="38" autocapitalize="off" autocomplete="off" placeholder="dj-rico">
       <p class="hint" id="slugHint">Your link: <b id="slugUrl"></b></p>
     </div>
     <div class="two">
@@ -76,7 +76,7 @@ a{color:var(--green-hi)}
       <div><label for="pin">Pick a 4–8 digit PIN</label><input id="pin" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>
       <div><label for="pin2">Type it again</label><input id="pin2" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>
     </div>
-    <p class="hint">You use this PIN to open your host page and settings. You can add 2 hosts with their own PINs.</p>
+    <p class="hint">You use this PIN to open your KJ page and settings. You can add a second KJ login with its own PIN.</p>
 
     <h2>4. Location check <span style="text-transform:none;letter-spacing:0;color:var(--ink-2);font-family:var(--body);font-weight:400">optional</span></h2>
     <p class="hint" id="locHelp" style="margin:0">Only people inside your bar can sign up. If you're at the bar now, tap the button. You can also do this later from your host page.</p>
@@ -93,7 +93,7 @@ a{color:var(--green-hi)}
   <section class="card" id="done" hidden>
     <h2>You're set up!</h2>
     <p id="doneNote" class="ok" style="margin:0"></p>
-    <p style="margin:0">Save these links. Your owner PIN opens the host page and Setup.</p>
+    <p style="margin:0">Save these links. Your owner PIN opens your KJ page and Setup.</p>
     <div class="links" id="links"></div>
     <p class="hint">Next: open <b>Setup</b> to add your socials and location, then print your QR poster or cast the TV screen.</p>
   </section>
@@ -101,16 +101,16 @@ a{color:var(--green-hi)}
 </main>
 <script>
 const $ = id => document.getElementById(id);
-let type = "bar", logo = "", spot = null, slugTouched = false;
+let type = "dj", logo = "", spot = null, slugTouched = false;
 const slugify = s => s.toLowerCase().replace(/['’]/g, "").normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 38);
 function setType(t){
   type = t; $("tBar").setAttribute("aria-pressed", t === "bar"); $("tDj").setAttribute("aria-pressed", t === "dj");
   $("nameLbl").textContent = t === "dj" ? "DJ business name" : "Bar name";
   $("name").placeholder = t === "dj" ? "DJ Rico Entertainment" : "Joe’s Pub";
   $("addrBox").hidden = t === "dj";
-  $("locHelp").textContent = t === "dj" ? "Each night you'll tap “I'm at a new venue” on your host page, and only people at that venue can sign up." : "Only people inside your bar can sign up. If you're at the bar now, tap the button. You can also do this later from your host page.";
+  $("locHelp").textContent = t === "dj" ? "Each night you'll tap “I'm at a new venue” on your KJ page, and only people at that venue can sign up." : "Only people inside your bar can sign up. If you're at the bar now, tap the button. You can also do this later from your host page.";
 }
-$("tBar").addEventListener("click", () => setType("bar")); $("tDj").addEventListener("click", () => setType("dj"));
+setType("dj");
 function paintSlug(){ $("slugUrl").textContent = location.host + "/b/" + ($("slug").value || "your-name"); }
 let checkT = null;
 function checkSlug(){
@@ -158,7 +158,7 @@ $("form").addEventListener("submit", async e => {
     else{
       $("form").hidden = true; $("done").hidden = false; $("doneNote").textContent = j.note;
       const L = $("links"); L.innerHTML = "";
-      [["Customer sign-up", ""], ["Host page", "kj"], ["Setup (logo, socials, billing)", "setup"], ["TV screen to cast", "tv"], ["Print QR poster", "poster"], ["Staff list", "staff"]].forEach(([label, p]) => {
+      [["Customer sign-up", ""], ["KJ page", "kj"], ["Setup (logo, socials, billing)", "setup"], ["TV screen to cast", "tv"], ["Print QR poster", "poster"], ["Staff list", "staff"]].forEach(([label, p]) => {
         const a = document.createElement("a"); a.href = j.base + "/" + p; a.target = "_blank"; a.rel = "noopener";
         const b = document.createElement("b"); b.textContent = label; const s = document.createElement("span"); s.textContent = location.host + j.base + "/" + p;
         a.append(b, s); L.appendChild(a);

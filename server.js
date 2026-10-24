@@ -83,6 +83,8 @@ app.use(async (req, res, next) => {
 // The KJ Total Package App: the main address is the sign-up page; every KJ's or bar's apps live under /b/<their-name>/
 const HOUSE_PAGES = /^\/(kj|owner|staff|watch|bar|tv|wall|stats|ads|history|wheel|poster|tent|setup|links(\/.*)?)?\/?$/;
 app.use((req, res, next) => { if (TEN().house && req.method === "GET" && HOUSE_PAGES.test(req.path)) return res.redirect("/start"); next(); });
+// KJ app only: no bar-owner app, owner list, live view or staff links; the KJ page is the KJ's control room
+app.use((req, res, next) => { if (!TEN().house && req.method === "GET" && /^\/(bar|owner|staff|watch|links(\/.*)?)\/?$/.test(req.path)) return res.redirect(BASE() + "/kj"); next(); });
 // a bar or DJ without an active plan: customers see a short note, staff get sent to Setup to subscribe
 app.use(async (req, res, next) => {
   const t = TEN();
@@ -1278,7 +1280,13 @@ app.get("/api/kj/stats", wrap(async (req, res) => {
   const djOf = t => { const m = spans.find(x => t >= x.s && t <= x.e); return m ? m.dj : ""; };
   const kjNames = [...new Set(spans.map(x => x.dj))].sort((a, b) => a.localeCompare(b));
   const kjPick = String(req.query.kj || "");
-  if (kjPick) rows = rows.filter(r => djOf(Date.parse(r.done_at)) === kjPick);
+  if (kjPick) rows = rows.filter(r => djOf(new Date(r.done_at).getTime()) === kjPick);
+  const vlog = await venueLog(), vOf = r => venueAt(vlog, new Date(r.done_at).getTime());
+  const byV = new Map();
+  for (const r of rows) { const v = vOf(r), g = byV.get(v) || { venue: v, songs: 0, singers: new Set(), likes: 0, nights: new Set(), posts: 0 }; g.songs++; g.singers.add(r.device); g.likes += r.likes || 0; g.nights.add(nightOf(r.done_at)); g.posts += postedList(r).length; byV.set(v, g); }
+  const byVenue = [...byV.values()].map(g => ({ venue: g.venue, songs: g.songs, singers: g.singers.size, likes: g.likes, nights: g.nights.size, posts: g.posts })).sort((a, b) => b.songs - a.songs);
+  const venuePick = String(req.query.venue || "");
+  if (venuePick) rows = rows.filter(r => vOf(r) === venuePick);
   let postedSongs = 0, posts = 0; const postsBy = { Facebook: 0, Instagram: 0, TikTok: 0 };
   for (const r of rows) { const pl = postedList(r); if (pl.length) { postedSongs++; posts += pl.length; pl.forEach(n => postsBy[n] = (postsBy[n] || 0) + 1); } }
   const nights = new Map(), hours = new Array(24).fill(0), singers = new Map(), songs = new Map(), artists = new Map();
@@ -1298,7 +1306,7 @@ app.get("/api/kj/stats", wrap(async (req, res) => {
   const singerList = [...singers.values()].map(x => ({ name: x.name, songs: x.songs, nights: x.nights.size, likes: x.likes, last: x.last }));
   const nightList = [...nights.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-31).map(([night, count]) => ({ night, count }));
   res.json({
-    range: rq || "all", kj: kjPick || null, kjs: kjNames,
+    range: rq || "all", kj: kjPick || null, kjs: kjNames, venue: venuePick || null, venues: byVenue.map(x => x.venue), byVenue,
     posts: { songs: postedSongs, total: posts, by: postsBy },
     ever: await everCounts().catch(() => null),
     totals: { songs: rows.length, singers: singers.size, nights: nights.size, repeat: singerList.filter(x => x.nights > 1).length,
@@ -1344,6 +1352,7 @@ app.get("/api/kj/singer-stats/:key", wrap(async (req, res) => {
   const r2 = x => Math.round(x * 100) / 100;
   res.json({ name: g.name, dj: !!g.dj, aka: [...g.names].filter(n => n !== g.name), songs: g.songs, missed: g.missed, nights: g.nights.size, likes: g.likes, first: g.first, last: g.last, seen: g.seen,
     money: seeMoney ? { tipped: r2(tipped), tipCount, moveups: r2(moveups), moveCount, total: r2(tipped + moveups) } : null,
+    bars: await (async () => { const L = await venueLog(), m = new Map(); for (const r of g.rows) { if (!r.done_at || !(r.status === "done" || r.status === "archived")) continue; const v = venueAt(L, new Date(r.done_at).getTime()), x = m.get(v) || { venue: v, songs: 0, likes: 0 }; x.songs++; x.likes += r.likes || 0; m.set(v, x); } return [...m.values()].sort((a, b) => b.songs - a.songs); })(),
     list: [...g.list.values()].sort((a, b) => b.count - a.count || b.likes - a.likes || String(b.last).localeCompare(String(a.last))) });
 }));
 app.get("/api/kj/singer-record/:key", wrap(async (req, res) => {
@@ -2191,7 +2200,7 @@ app.post("/api/start", wrap(async (req, res) => {
   const ip = req.ip, now = Date.now(), l = (startHits.get(ip) || []).filter(x => now - x < 3600e3);
   if (l.length >= 5) return res.status(429).json({ error: "Too many sign-ups from here. Try again in an hour." });
   const b = req.body || {};
-  const type = b.type === "dj" ? "dj" : "bar";
+  const type = "dj";   // KJ businesses only
   const name = cleanName(b.name, 50); if (!name) return res.status(400).json({ error: type === "dj" ? "Enter your DJ business name." : "Enter the bar's name." });
   const slug = slugify(b.slug || name);
   if (slug.length < 3) return res.status(400).json({ error: "Pick a web name with at least 3 letters or numbers." });
@@ -2298,11 +2307,16 @@ app.post("/api/platform/bars/:slug", wrap(async (req, res) => {
 }));
 
 /* ---------- DJs (and bars): "I'm at a new venue tonight" ---------- */
+// which bar the KJ was at: every "I'm at a new venue" is logged, so each song counts for the bar it was sung at
+async function venueLog() { try { return JSON.parse((await db.getSetting("venue_log")) || "[]"); } catch (e) { return []; } }
+function venueAt(L, t) { let v = ""; for (const x of L) { if (x.at <= t) v = x.v; else break; } return v || "Unknown bar"; }
 app.post("/api/kj/venue", wrap(async (req, res) => {
   const cur = TEN(); if (cur.house) return res.status(400).json({ error: "The Dive's location is set in Render." });
   const t = await db.getTenant(cur.slug), b = req.body || {};
   const err = cleanTenantFields({ venue: b.venue, lat: b.lat, lng: b.lng }, t); if (err) return res.status(400).json({ error: err });
-  await saveTenant(t); res.json({ ok: true, venue: t.venue, hasSpot: t.lat != null });
+  await saveTenant(t);
+  { const L = await venueLog(); L.push({ v: t.venue || "", at: Date.now() }); await db.setSetting("venue_log", JSON.stringify(L.slice(-3000))); }
+  res.json({ ok: true, venue: t.venue, hasSpot: t.lat != null });
 }));
 
 /* ---------- pages ---------- */
