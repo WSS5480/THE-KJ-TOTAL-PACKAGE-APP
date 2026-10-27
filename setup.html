@@ -107,12 +107,12 @@ a{color:var(--green-hi)}
       <p class="hint">Your own look on the sign-up app, TV screen, KJ page and wall. Start from a preset, then tap any color box to open the full color picker (grid, spectrum or sliders) and set any color you want.</p>
       <div class="row" id="thPresets" style="flex-wrap:wrap;gap:6px"></div>
       <div class="two">
-        <div><label for="thAccent">Accent (buttons, headings)</label><input id="thAccent" class="thpick" type="color" value="#39b54a"></div>
+        <div><label for="thAccent">Accent (buttons, headings)</label><input id="thAccent" class="thpick" type="color" value="#e5383b"></div>
         <div><label for="thText">Text</label><input id="thText" class="thpick" type="color" value="#eef3ee"></div>
       </div>
       <div class="two">
         <div><label for="thBg">Background</label><input id="thBg" class="thpick" type="color" value="#0a0c0a"></div>
-        <div><label for="thBanner">Banners (shout-outs, ads, band break)</label><input id="thBanner" class="thpick" type="color" value="#183a1d"></div>
+        <div><label for="thBanner">Banners (shout-outs, ads, band break)</label><input id="thBanner" class="thpick" type="color" value="#2a0e0f"></div>
       </div>
       <div><label for="thBannerText">Banner text</label><input id="thBannerText" class="thpick" type="color" value="#eef3ee"></div>
       <div id="thPrev" style="border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;border:1px solid #333">
@@ -189,8 +189,8 @@ async function open(){ paint(await api("/api/setup/me")); $("login").hidden = tr
 $("pinForm").addEventListener("submit", async e => { e.preventDefault(); pin = $("pin").value.trim(); try{ await open(); try{ sessionStorage.setItem("kj_pin", pin); }catch(e){} }catch(e){ if(e.message !== "pin") $("pinErr").textContent = e.message; } });
 if(pin) open().catch(() => {});
 if(/paid=1/.test(location.search)) $("paidMsg").hidden = false;
-const TH_DEF = { accent: "#39b54a", text: "#eef3ee", bg: "#0a0c0a", banner: "#183a1d", bannerText: "#eef3ee" };
-const TH_PRESETS = [["Dive green", TH_DEF], ["Neon pink", { accent: "#ff3ea5", text: "#fdf2f8", bg: "#12060d", banner: "#3a0d26", bannerText: "#ffe4f1" }],
+const TH_DEF = { accent: "#e5383b", text: "#eef3ee", bg: "#0a0c0a", banner: "#2a0e0f", bannerText: "#eef3ee" };
+const TH_PRESETS = [["KJ red", TH_DEF], ["Green", { accent: "#39b54a", text: "#eef3ee", bg: "#0a0c0a", banner: "#183a1d", bannerText: "#eef3ee" }], ["Neon pink", { accent: "#ff3ea5", text: "#fdf2f8", bg: "#12060d", banner: "#3a0d26", bannerText: "#ffe4f1" }],
   ["Electric blue", { accent: "#2f8cff", text: "#eef5ff", bg: "#060b14", banner: "#0e2547", bannerText: "#e3efff" }], ["Gold", { accent: "#f5b700", text: "#fff8e6", bg: "#0f0c05", banner: "#3a2c06", bannerText: "#fff1c2" }],
   ["Purple night", { accent: "#a35cff", text: "#f5efff", bg: "#0b0714", banner: "#2a1650", bannerText: "#efe3ff" }], ["Red room", { accent: "#ff4d4d", text: "#fff0f0", bg: "#120606", banner: "#3d0e0e", bannerText: "#ffe1e1" }],
   ["Light", { accent: "#1f8a3b", text: "#14181a", bg: "#f6f7f5", banner: "#dff2e3", bannerText: "#14181a" }]];

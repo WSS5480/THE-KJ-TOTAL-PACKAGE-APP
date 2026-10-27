@@ -75,7 +75,7 @@ app.use(async (req, res, next) => {
   if (!m) { req._ctx = { t: "dive", tenant: DIVE, base: "" }; return ctx.run(req._ctx, next); }
   let t = null;
   try { t = await loadTenant(m[1]); } catch (e) { console.error(e); return res.status(500).send("Database problem. Try again in a minute."); }
-  if (!t || t.deleted) return res.status(404).type("html").send(simplePage("Not found", `<h1>We couldn't find that karaoke page</h1><p>Check the link, or ask the host for the QR code.</p>`));
+  if (!t || t.deleted) return res.status(404).type("html").send(simplePage("Not found", `<h1>We couldn't find that karaoke page</h1><p>Check the link, or ask the KJ for the QR code.</p><p><a href=\"/start\" style=\"color:#5fd36e\">Are you a KJ? Sign up here</a></p>`));
   req.url = (m[2] || "/") + (m[3] || "");
   req._ctx = { t: t.slug, tenant: t, base: "/b/" + t.slug };
   ctx.run(req._ctx, next);
@@ -216,7 +216,7 @@ function rawPage(file, appMeta) {
 function sendPage(req, res, file, appMeta, type) {
   const t = TEN(), key = t.slug + "|" + file + "|" + (t.v || 0) + "|" + req.get("host");
   let h = pageCache.get(key);
-  if (h == null) { h = rawPage(file, appMeta); if (!t.house) h = brand(h, t, BASE(), req.get("host")); if (t.theme && /\.html$/.test(file) && file !== "setup.html") h = h.replace("</head>", themeCss(t.theme) + "\n</head>"); pageCache.set(key, h); }
+  if (h == null) { h = rawPage(file, appMeta); if (!t.house) h = brand(h, t, BASE(), req.get("host")); if (/\.html$/.test(file) && !/^(poster|tent)\.html$/.test(file)) h = h.replace("</head>", themeCss(t.theme || KJ_RED) + "\n</head>"); pageCache.set(key, h); }
   res.type(type || "html").set("Cache-Control", "no-cache").send(h);
 }
 // logo + app icons: The Dive's files, or the bar's own uploaded logo
@@ -2160,6 +2160,8 @@ app.get("/api/url", (req, res) => res.json({ url: siteUrl(req) + BASE() + "/" })
 
 /* ---------- new bar / DJ sign-up (main site only: /start) ---------- */
 const startHits = new Map();
+// The KJ Total Package App's own look: red, until a KJ picks their own colors in Setup
+const KJ_RED = { accent: "#e5383b", banner: "#2a0e0f" };
 const HEX = v => /^#[0-9a-f]{6}$/i.test(String(v || "")) ? String(v).toLowerCase() : null;
 function mixHex(a, b, k) { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const x = p(a), y = p(b); return "#" + x.map((v, i) => Math.round(v + (y[i] - v) * k).toString(16).padStart(2, "0")).join(""); }
 // a bar's or KJ's own colors: accent (buttons, headings), text, background, and the banners (shout-out bar, ads, band break)
@@ -2394,5 +2396,12 @@ app.get("/healthz", (req, res) => res.send("ok"));
 db.init().then(async () => {
   if (!SESSION_SECRET) { SESSION_SECRET = await db.getSetting("session_secret"); if (!SESSION_SECRET) { SESSION_SECRET = crypto.randomBytes(32).toString("hex"); await db.setSetting("session_secret", SESSION_SECRET); } }
   await setupTwilio();
+  // a permanent demo KJ account to show and test with (PIN comes from DEMO_PIN in Render, never from the code)
+  if (process.env.DEMO_PIN && /^\d{4,8}$/.test(process.env.DEMO_PIN)) {
+    let t = await db.getTenant("demo");
+    if (!t) t = { slug: "demo", type: "dj", name: "Demo KJ", short: "Demo KJ", qr: crypto.randomBytes(4).toString("hex"), radius: 150, created: new Date().toISOString() };
+    t.pinHash = hashPin(process.env.DEMO_PIN); t.plan = { plan: "pro", expires_on: null, source: "demo" }; t.deleted = false;
+    await saveTenant(t); console.log("Demo KJ account ready at /b/demo/");
+  }
   console.log(TW_READY ? "Twilio ready. Phone sign-in switch: " + ((await db.getSetting("phone_signin")) || process.env.PHONE_SIGNIN || "on") : "Phone sign-in: off (set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN)");
 }).then(() => app.listen(PORT, () => console.log(`KJ Total Package App running on port ${PORT}`)));
