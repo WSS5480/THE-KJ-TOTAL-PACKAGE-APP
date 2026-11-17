@@ -30,14 +30,19 @@ Start here if you are a new AI session picking this up. Update this file in the 
 - Identity is the PHONE: each sign-up row has `device` (the `dive_device` cookie, or `c<uid>` for a signed-in singer). Likes, posts, wall and duets hang off the sign-up row.
 - `update.js` reloads phones on a new build. `install.js` is the Add-to-Home-Screen guide.
 - Plans: a 14-day trial or a code through the My Apps console (`MYAPPS_URL` / `MYAPPS_SECRET`). Stripe card billing is optional (`STRIPE_*`). There are 2 host logins per account.
-- Text-message (Twilio) sign-in codes were dropped on 2026-10-26. The Twilio code is still in server.js but stays off unless its environment variables are set.
+- Text-message (Twilio) sign-in codes were dropped on 2026-10-26 because they aren't needed. The Twilio code is still in server.js but stays off unless its environment variables are set.
 
 ## Ship
 - Deploy = push to `main`. Render auto-deploys service srv-dbe3h6vb9u1s73c26vk0.
+- The service was suspended on 2026-11-08 and resumed on 2026-11-16. Before relying on a push to go live, check in Render that the service isn't suspended.
 - Render setup:
   - Free plan.
   - Free Postgres `kj-total-package-db`, which expires around 2026-11-22 (see Open items).
 - Environment variables are set in Render, never in the repo: `DATABASE_URL`, `SESSION_SECRET`, `KJ_PIN`, `DEMO_PIN`, `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, `MYAPPS_URL`, `MYAPPS_SECRET`, `PUBLIC_URL`.
+- Optional environment variables:
+  - `HOST_TEMP_PIN`: a starting PIN the owner can give new DJ logins.
+  - `PLATFORM_KEY`: the key My Apps uses to list and manage accounts. It defaults to `MYAPPS_SECRET`.
+  - `MYAPPS_SLUG`: this app's name in My Apps. It defaults to `karaoke`.
 - Local test:
   1. Run `npm ci`, then `node --check server.js`.
   2. Start the server: `PORT=3101 DATABASE_URL=postgresql://user@127.0.0.1:<port>/<db> PGSSL=off node server.js`. Leave `DATABASE_URL` unset to use in-memory storage instead.
@@ -46,6 +51,11 @@ Start here if you are a new AI session picking this up. Update this file in the 
   5. Run the KJ page APIs with header `x-kj-pin`.
 
 ## Change log (newest first)
+- 2026-11-17 Fixes after review:
+  - No Dive or McAllen wording reaches a KJ's pages. The served `manifest.json` and the singer app's home-screen name showed "Dive Karaoke" and "McAllen TX"; `brand()` now covers "Dive Karaoke", every "McAllen TX" form (with no dangling comma or "in" when the KJ has no city) and "Bar + Stage". The install bar's fallback name is now "this app".
+  - Spanish for step 4 of the iPhone guide.
+  - Step 4 only shows when the guide is opened from "Buzz my phone", not from "Add to my phone" or after a backdrop tap.
+  - The uncropped-logo rule matches only the logo file (`/logo.png`).
 - 2026-11-17 Ported from The Dive: KJ page "Copy song" button on each waiting singer and "📋 Copy song" on the singer up now (copies "Song Artist" to paste into the karaoke software).
 - 2026-11-17 Ported from The Dive: likes have no "Slow down" pop-up; limit raised to 150 a minute per phone, and taps on different singers are no longer dropped.
 - 2026-11-17 Ported from The Dive: logo is never cropped in the logo avatars on the singer app and the KJ page (whole logo shows inside the circle).
@@ -60,7 +70,7 @@ Start here if you are a new AI session picking this up. Update this file in the 
 ## Decisions
 - 2026-10-23 The app is separate from The Dive (own repo, server and database). Reason: it is sold to other KJs under Stemo Enterprises.
 - 2026-10-23 KJ businesses only: no bar sign-up and no bar-owner features. Reason: the product is for KJs on the road. The KJ page is the KJ's control room.
-- 2026-10-26 Text-message (Twilio) sign-in codes dropped. (The reason is not recorded in the repo.)
+- 2026-10-26 Text-message (Twilio) sign-in codes dropped. Reason: they aren't needed.
 - 2026-11-17 The Dive's changes are ported here one by one, adapted to multi-tenant and with no Dive branding. Dive-only parts (website `site.html`, bar owner, store manager, food menu) are skipped. Reason: Steve asked for every Dive change made since this app was created to be brought over and deployed as it comes up.
 - PINs (owner PIN, `KJ_PIN`, `DEMO_PIN`) live only in Render or hashed in the database, never in code. Reason: README rule.
 

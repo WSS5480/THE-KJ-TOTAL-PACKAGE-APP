@@ -194,10 +194,12 @@ function brand(html, t, base, host) {
        .replace(/the-dive-karaoke\.onrender\.com/g, (host || "") + base)
        .replace(/1116 Pecan Blvd, McAllen, (Texas|TX)/g, t.address || name)
        .replace(/Hidalgo County, Texas/g, "the county where " + short + " is located").replace(/a Hidalgo County justice court/g, "the local justice court")
-       .replace(/ · McAllen, TX/g, city ? " · " + city : "").replace(/McAllen, (TX|Texas)/g, city || "")
+       // "· McAllen, TX", ", McAllen TX", " in McAllen, TX": the KJ's city with the same lead-in, or nothing (no dangling comma or "in")
+       .replace(/(,| ·| in)? McAllen,? (TX|Texas)\b/g, (m, lead) => city ? (lead || "") + " " + city : "").replace(/McAllen,? (TX|Texas)/g, city || "")
+       .replace(/, Bar \+ Stage/g, "")
        .replace(/#TheDiveOn495/g, "#" + tagWord).replace(/ ?#McAllen/g, city ? " #" + city.replace(/[^A-Za-z0-9]/g, "") : "")
        .replace(/The Dive on 495/g, name).replace(/The Dive/g, short)
-       .replace(/\bDive (KJ|Staff|Stats|Ads|Wheel|TV|History|Fame)\b/g, short + " $1")
+       .replace(/\bDive (KJ|Staff|Stats|Ads|Wheel|TV|History|Fame|Karaoke)\b/g, short + " $1")
        .replace(/Escanea para cantar/g, "Escanea para cantar");
   return h;
 }

@@ -1,11 +1,11 @@
-/* "Add as an app" bar for the extra Dive pages (stats, ads, wheel, TV, history, wall).
+/* "Add as an app" bar for the extra pages (stats, ads, wheel, TV, history, wall).
    Each page has its own manifest and icon, so each one installs as its own app.
    Android/Chrome: one tap (real install prompt). iPhone: shows the Share → Add to Home Screen guide. */
 (function () {
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(function () {});
   var standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
   if (standalone) return;
-  var name = (document.querySelector('meta[name="apple-mobile-web-app-title"]') || {}).content || "The Dive";
+  var name = (document.querySelector('meta[name="apple-mobile-web-app-title"]') || {}).content || "this app";
   var icon = (document.querySelector('link[rel="apple-touch-icon"]') || {}).href || "/logo.png";
   var KEY = "dive_install_x_" + location.pathname;
   try { if (sessionStorage.getItem(KEY) === "1") return; } catch (e) {}
