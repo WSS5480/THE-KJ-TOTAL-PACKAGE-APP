@@ -184,24 +184,30 @@ function brand(html, t, base, host) {
   if (t.house) return html;
   const name = t.name, short = t.short || t.name, tagWord = (short || name).replace(/[^A-Za-z0-9]/g, ""), city = t.city || "";
   const tags = Object.assign({ Facebook: "@" + name, Instagram: "@" + tagWord.toLowerCase(), TikTok: "@" + tagWord.toLowerCase() }, t.tags || {});
-  let h = html.replace(PATH_RE, (m, q) => q + base + "/");
+  // the KJ's own words (name, city, address...) go in as placeholders and are filled in last, so no rule below
+  // rewrites them ("Deep Dive Karaoke" stays as typed) and a "$" in them is never read as a replace pattern
+  const vals = [], V = v => "\u0000" + (vals.push(String(v)) - 1) + "\u0000";
+  let h = html.replace(PATH_RE, (m, q) => q + base + "/")
+       // "Dive KJ", "Dive Karaoke"... -> "The Dive KJ" first, so the one "The Dive" rule names them
+       .replace(/(?<!The )\bDive (KJ|Staff|Stats|Ads|Wheel|TV|History|Fame|Karaoke)\b/g, "The Dive $1");
   h = h.replace(/const LOGO_SRC = "[^"]*"/, `const LOGO_SRC = "${base}/logo.png"`)
        .replace(/(<div class="qrcorner"[^>]*>)<svg[\s\S]*?<\/svg>/, `$1<img src="${base}/qr.svg" alt="QR code to sign up" style="display:block;width:100%">`)
-       .replace(/const DIVE_TAGS = \{[^}]*\};/, "const DIVE_TAGS = " + JSON.stringify(tags) + ";")
+       .replace(/const DIVE_TAGS = \{[^}]*\};/, () => "const DIVE_TAGS = " + V(JSON.stringify(tags)) + ";")
        .replace(/const DIVE_FOLLOW = \{[^}]*\};/, "const DIVE_FOLLOW = {};")
        .replace(/<a href="https:\/\/www\.facebook\.com\/[^"]*"[^>]*>Facebook<\/a>/g, "Facebook").replace(/<a href="https:\/\/www\.instagram\.com\/[^"]*"[^>]*>Instagram<\/a>/g, "Instagram")
        .replace(/"kj_pin"/g, `"kj_pin_${t.slug}"`).replace(/(["'])dive_/g, `$1dive_${t.slug}_`)
-       .replace(/the-dive-karaoke\.onrender\.com/g, (host || "") + base)
-       .replace(/1116 Pecan Blvd, McAllen, (Texas|TX)/g, t.address || name)
-       .replace(/Hidalgo County, Texas/g, "the county where " + short + " is located").replace(/a Hidalgo County justice court/g, "the local justice court")
+       .replace(/the-dive-karaoke\.onrender\.com/g, () => V(host || "") + base)
+       .replace(/1116 Pecan Blvd, McAllen, (Texas|TX)/g, () => V(t.address || name))
+       .replace(/Hidalgo County, Texas/g, () => "the county where " + V(short) + " is located").replace(/a Hidalgo County justice court/g, "the local justice court")
        // "· McAllen, TX", ", McAllen TX", " in McAllen, TX": the KJ's city with the same lead-in, or nothing (no dangling comma or "in")
-       .replace(/(,| ·| in)? McAllen,? (TX|Texas)\b/g, (m, lead) => city ? (lead || "") + " " + city : "").replace(/McAllen,? (TX|Texas)/g, city || "")
+       .replace(/(,| ·| in)? McAllen,? (TX|Texas)\b/g, (m, lead) => city ? (lead || "") + " " + V(city) : "").replace(/\bMcAllen,? (TX|Texas)\b/g, () => city ? V(city) : "")
        .replace(/, Bar \+ Stage/g, "")
-       .replace(/#TheDiveOn495/g, "#" + tagWord).replace(/ ?#McAllen/g, city ? " #" + city.replace(/[^A-Za-z0-9]/g, "") : "")
-       .replace(/The Dive on 495/g, name).replace(/The Dive/g, short)
-       .replace(/\bDive (KJ|Staff|Stats|Ads|Wheel|TV|History|Fame|Karaoke)\b/g, short + " $1")
+       .replace(/#TheDiveOn495/g, () => "#" + V(tagWord)).replace(/ ?#McAllen/g, () => city ? " #" + V(city.replace(/[^A-Za-z0-9]/g, "")) : "")
+       .replace(/The Dive on 495/g, () => V(name)).replace(/The Dive/g, () => V(short))
+       // no doubled word when the name already ends with it: "Demo KJ" + " KJ app" -> "Demo KJ app", "Deep Dive Karaoke" + " Karaoke" -> "Deep Dive Karaoke"
+       .replace(/\u0000(\d+)\u0000 (KJ|Karaoke)\b/g, (m, i, w) => (vals[i].trim().split(/\s+/).pop() || "").toLowerCase() === w.toLowerCase() ? "\u0000" + i + "\u0000" : m)
        .replace(/Escanea para cantar/g, "Escanea para cantar");
-  return h;
+  return h.replace(/\u0000(\d+)\u0000/g, (m, i) => vals[i]);
 }
 const pageCache = new Map();
 // changes with every deploy: pages compare it with what the server sends back and reload themselves when it moves on
@@ -2272,14 +2278,15 @@ app.get("/s/:id", wrap(async (req, res) => {
   const r = await db.get(parseInt(req.params.id, 10)), base = siteUrl(req) + BASE();
   if (!r || !r.public) return res.redirect(BASE() + "/wall");
   const stars = r.likes ? "❤️ " + r.likes + (r.likes === 1 ? " like" : " likes") : "";
-  const title = `${r.name} sang ${r.song} at The Dive on 495`;
+  // the singer's own words go in after branding, so a name or song like "The Dive" or "McAllen, TX Band" is never rewritten
+  const U = { name: r.name, song: r.song, artist: r.artist || "" }, title = `\u0001name\u0001 sang \u0001song\u0001 at The Dive on 495`;
   res.type("html").send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc((stars ? stars + " · " : "") + "Karaoke night at The Dive on 495, McAllen, TX. Scan to sing!")}">
 <meta property="og:image" content="${esc(base)}/logo.png"><meta property="og:url" content="${esc(base)}/s/${r.id}"><meta property="og:type" content="website">
 <link rel="icon" href="/logo.png"><style>body{margin:0;background:#0a0c0a;color:#eef3ee;font-family:system-ui,-apple-system,sans-serif;display:grid;place-items:center;min-height:100vh;padding:24px;box-sizing:border-box;text-align:center}
 img{width:160px;filter:drop-shadow(0 0 20px rgba(57,181,74,.55))}h1{font-family:Georgia,serif;font-size:28px;margin:16px 0 4px}.s{color:#ff6b8a;font-size:24px;font-weight:700;margin-top:6px}p{color:#9fae9f}a{display:inline-block;margin-top:14px;background:#39b54a;color:#041206;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px}</style></head>
-<body><main><img src="/logo.png" alt="The Dive on 495"><h1>${esc(r.name)}</h1><div>sang <b>${esc(r.song)}</b>${r.artist ? " – " + esc(r.artist) : ""}</div><div class="s">${stars}</div>
-<p>Karaoke at The Dive on 495 · McAllen, TX</p><a href="/wall">See the wall of fame</a></main></body></html>`.replace(/<html[\s\S]*$/, h => brand(h, TEN(), BASE())));
+<body><main><img src="/logo.png" alt="The Dive on 495"><h1>\u0001name\u0001</h1><div>sang <b>\u0001song\u0001</b>${r.artist ? " – \u0001artist\u0001" : ""}</div><div class="s">${stars}</div>
+<p>Karaoke at The Dive on 495 · McAllen, TX</p><a href="/wall">See the wall of fame</a></main></body></html>`.replace(/<html[\s\S]*$/, h => brand(h, TEN(), BASE())).replace(/\u0001(name|song|artist)\u0001/g, (m, k) => esc(U[k])));
 }));
 app.get("/api/url", (req, res) => res.json({ url: siteUrl(req) + BASE() + "/" }));
 

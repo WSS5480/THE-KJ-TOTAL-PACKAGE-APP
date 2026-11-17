@@ -24,7 +24,7 @@ Start here if you are a new AI session picking this up. Update this file in the 
   - `/setup` (logo, colors, owner PIN, plan)
   - `/poster` and `/tent`
 - The bare site (the "house" tenant) only serves `/start`; its app pages redirect there. `/bar`, `/owner`, `/staff`, `/watch` and `/links` redirect a KJ to their `/kj`.
-- Branding happens at serve time. The HTML is shared with The Dive's app and still says "The Dive" in the source. `brand()` in server.js rewrites paths to `/b/<name>/` and swaps "The Dive" / "The Dive on 495" for the KJ's short or full name before the page is sent. When porting Dive changes:
+- Branding happens at serve time (the KJ's own name/city/address go in as placeholders filled in last, so no rule rewrites them). The HTML is shared with The Dive's app and still says "The Dive" in the source. `brand()` in server.js rewrites paths to `/b/<name>/` and swaps "The Dive" / "The Dive on 495" for the KJ's short or full name before the page is sent. When porting Dive changes:
   - Keep new wording neutral where you can. Text that must name the show can say "The Dive"; `brand()` turns it into the KJ's name.
   - Check the served page (`curl /b/<name>/...`), not the file, for leftover Dive words.
 - Identity is the PHONE: each sign-up row has `device` (the `dive_device` cookie, or `c<uid>` for a signed-in singer). Likes, posts, wall and duets hang off the sign-up row.
@@ -51,6 +51,12 @@ Start here if you are a new AI session picking this up. Update this file in the 
   5. Run the KJ page APIs with header `x-kj-pin`.
 
 ## Change log (newest first)
+- 2026-11-17 Branding fix after re-review:
+  - A KJ's own name, city and address are no longer rewritten. "Deep Dive Karaoke" used to come out as "Deep Deep Dive Karaoke Karaoke" and "Sky Dive KJ" as "Sky Sky Dive KJ KJ". `brand()` now turns "Dive KJ/Karaoke/..." into "The Dive ..." first and puts the KJ's values in as placeholders filled in last.
+  - No doubled app word when the name already ends with it: "Get the Demo KJ app", not "Demo KJ KJ".
+  - The share page (`/s/:id`) brands its template before adding the singer's name, song and artist, so singer text like "The Dive" or "McAllen, TX Band" shows as typed.
+  - The install bar says "Get the app" when a page has no app name.
+  - Pages for normal KJ names are byte-identical to before.
 - 2026-11-17 Fixes after review:
   - No Dive or McAllen wording reaches a KJ's pages. The served `manifest.json` and the singer app's home-screen name showed "Dive Karaoke" and "McAllen TX"; `brand()` now covers "Dive Karaoke", every "McAllen TX" form (with no dangling comma or "in" when the KJ has no city) and "Bar + Stage". The install bar's fallback name is now "this app".
   - Spanish for step 4 of the iPhone guide.

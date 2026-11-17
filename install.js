@@ -5,7 +5,7 @@
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(function () {});
   var standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
   if (standalone) return;
-  var name = (document.querySelector('meta[name="apple-mobile-web-app-title"]') || {}).content || "this app";
+  var name = (document.querySelector('meta[name="apple-mobile-web-app-title"]') || {}).content || "";
   var icon = (document.querySelector('link[rel="apple-touch-icon"]') || {}).href || "/logo.png";
   var KEY = "dive_install_x_" + location.pathname;
   try { if (sessionStorage.getItem(KEY) === "1") return; } catch (e) {}
@@ -32,7 +32,7 @@
 
   var bar = document.createElement("div"); bar.id = "diveA2hs"; bar.hidden = true;
   bar.innerHTML = '<img alt=""><div class="dva-tx"><b></b><span>Add it to your home screen.</span></div><button type="button" class="dva-add">Add</button><button type="button" class="dva-x" aria-label="Hide">×</button>';
-  bar.querySelector("img").src = icon; bar.querySelector("b").textContent = "Get the " + name + " app";
+  bar.querySelector("img").src = icon; bar.querySelector("b").textContent = name ? "Get the " + name + " app" : "Get the app";
   var guide = document.createElement("div"); guide.id = "diveGuide"; guide.hidden = true; guide.setAttribute("role", "dialog");
   guide.innerHTML = '<div class="box"><div class="dvg-st"><span class="dvg-n">1</span><span>Tap the <b>Share</b> button ⬆︎ ' + (iosChrome ? "at the top right" : "below") + '</span></div><div class="dvg-st"><span class="dvg-n">2</span><span>Scroll down, tap <b>Add to Home Screen</b></span></div><div class="dvg-st"><span class="dvg-n">3</span><span>Tap <b>Add</b>. Done!</span></div><button type="button" class="cl">Close</button></div><div class="ar" aria-hidden="true">' + (iosChrome ? "⬆" : "⬇") + "</div>";
   if (iosChrome) guide.classList.add("top");
