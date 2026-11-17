@@ -51,6 +51,7 @@ Start here if you are a new AI session picking this up. Update this file in the 
   5. Run the KJ page APIs with header `x-kj-pin`.
 
 ## Change log (newest first)
+- 2026-11-17 Follow-up: "Change my name" needs at least one song in this account (stops name-only sign-up tries from filling the KJ's undo log), and the KJ activity log's quick-rename line names the singer before the change ("Renamed Eve (Song) to Evie").
 - 2026-11-17 Ported from The Dive: singers can change their own name ("Change my name" under the locked name): stays locked to their phone, past songs in this account renamed (duet partner kept), 3 a day, can't take a name in line on another phone, the KJ can undo; this account only.
 - 2026-11-17 Ported from The Dive: Fix a singer's name (KJ page): rename a phone everywhere or move songs to another singer #; two-tap confirm, logged, one-tap undo (newest first per singer); scoped to the KJ's own account (phones are shown by an account-tied handle, never their cookie; phone-number sign-ins get a per-account name, never changed in other KJ accounts). The KJ page's quick rename is now account-only too, and the KJ activity log records actions again (it missed every `/b/<name>` request).
 - 2026-11-17 Branding fix after re-review:

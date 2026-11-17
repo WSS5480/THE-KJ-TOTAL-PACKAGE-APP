@@ -966,13 +966,15 @@ app.post("/api/me/name", lockedWrap(async (req, res) => {
   if (!n) return res.status(400).json({ error: "Type your name." });
   const p = await getProfile(dv), oldName = (await keyName(d)) || (p && p.name) || "";
   if (!oldName) return res.status(400).json({ error: "Sign up first, then you can change your name." });
+  const rows = await db.allByDevice(d);   // a name with no song here (a name-only sign-up try) can't change names or fill the KJ's undo log
+  if (!rows.length) return res.status(400).json({ error: "Sign up first, then you can change your name." });
   if (oldName === n) return res.json({ ok: true, name: n });
   let hist = []; try { hist = JSON.parse((await db.getSetting("namechg:" + d)) || "[]"); } catch (e) {}
   hist = hist.filter(t => Date.now() - t < 864e5);
   if (hist.length >= 3) return res.status(429).json({ error: "You've changed your name 3 times today. Ask the KJ if it still isn't right." });
   const nk = nameKey(n);
   if ((await db.active()).some(r => r.device !== d && r.device !== dv && nameKey(r.name) === nk)) return res.status(409).json({ error: n + " is already on the list on another phone. Add your last initial (like " + n + " R)." });
-  const rows = await db.allByDevice(d), before = rows.map(r => ({ id: r.id, device: r.device, name: r.name }));
+  const before = rows.map(r => ({ id: r.id, device: r.device, name: r.name }));
   for (const r of rows) { const lab = relabel(r.name, n); if (r.name !== lab) await db.rename(r.id, lab); }
   await setProfile(dv, { ...(p || {}), name: n });
   if (u) await setKeyName(d, n);   // phone-number sign-in: this account's name only
@@ -1261,7 +1263,7 @@ async function describeKj(req) {
   if (u === "/api/kj/undo-next") return "Undo next singer";
   if (u === "/api/kj/add") return "Added singer " + (b.name || "") + " – " + (b.song || "") + (b.spot ? " at #" + b.spot : "") + (b.lock ? " (locked)" : "");
   if ((m = u.match(/^\/api\/kj\/(\d+)\/song$/))) return "Changed song for " + ((await db.get(parseInt(m[1], 10))) || {}).name + " to " + (b.song || "") + (b.artist ? " – " + b.artist : "");
-  if ((m = u.match(/^\/api\/kj\/(\d+)\/rename$/))) return "Renamed " + await nm(m[1]) + " to " + (b.name || "");
+  if ((m = u.match(/^\/api\/kj\/(\d+)\/rename$/))) return "Renamed " + (req._renamedFrom || await nm(m[1])) + " to " + (b.name || "");
   if ((m = u.match(/^\/api\/kj\/bump\/(\w+)$/))) return (b.ok ? "Approved" : "Denied") + " a paid move-up";
   if ((m = u.match(/^\/api\/kj\/(\d+)\/(\w+)$/))) return (ACT_NAMES[m[2]] || m[2]).replace(/^./, c => c.toUpperCase()) + " " + await nm(m[1]) + (b.spot ? " to #" + b.spot : "");
   if ((m = u.match(/^\/api\/kj\/photo\/(\d+)\/(\w+)$/))) return "Photo " + m[2] + " for " + await nm(m[1]);
@@ -1958,6 +1960,7 @@ app.post("/api/kj/:id/rename", wrap(async (req, res) => {
   const id = parseInt(req.params.id, 10), row = await db.get(id), n = clean(req.body.name, 30);
   if (!row) return res.status(404).json({ error: "That singer isn't on the list anymore." });
   if (!n) return res.status(400).json({ error: "Enter a name." });
+  req._renamedFrom = row.name + (row.song ? " (" + row.song + ")" : "");   // the activity log is written after the change, so keep the old name
   await db.rename(id, n);
   if (row.device && !row.device.startsWith("kj-")) await setKeyName(row.device, n.split(" & ")[0].trim() || n);   // this KJ's account only
   singersCache.delete(T());
