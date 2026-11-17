@@ -51,6 +51,8 @@ Start here if you are a new AI session picking this up. Update this file in the 
   5. Run the KJ page APIs with header `x-kj-pin`.
 
 ## Change log (newest first)
+- 2026-11-17 Ported from The Dive: singers can change their own name ("Change my name" under the locked name): stays locked to their phone, past songs in this account renamed (duet partner kept), 3 a day, can't take a name in line on another phone, the KJ can undo; this account only.
+- 2026-11-17 Ported from The Dive: Fix a singer's name (KJ page): rename a phone everywhere or move songs to another singer #; two-tap confirm, logged, one-tap undo (newest first per singer); scoped to the KJ's own account (phones are shown by an account-tied handle, never their cookie; phone-number sign-ins get a per-account name, never changed in other KJ accounts). The KJ page's quick rename is now account-only too, and the KJ activity log records actions again (it missed every `/b/<name>` request).
 - 2026-11-17 Branding fix after re-review:
   - A KJ's own name, city and address are no longer rewritten. "Deep Dive Karaoke" used to come out as "Deep Deep Dive Karaoke Karaoke" and "Sky Dive KJ" as "Sky Sky Dive KJ KJ". `brand()` now turns "Dive KJ/Karaoke/..." into "The Dive ..." first and puts the KJ's values in as placeholders filled in last.
   - No doubled app word when the name already ends with it: "Get the Demo KJ app", not "Demo KJ KJ".
@@ -85,3 +87,4 @@ Start here if you are a new AI session picking this up. Update this file in the 
 2. Commit 9d20fa4 is labelled "WIP (not tested, not on main)" but sits on `main` (red default theme, demo KJ account from `DEMO_PIN`, sign-up link on the not-found page). Check that it works on the live service, or fix or revert it.
 3. The Twilio code is still in server.js though text codes were dropped. Remove it once Steve confirms.
 4. Keep porting new Dive changes as they land (skip website, bar-owner, store-manager and menu features).
+5. `/api/singers` (duet partner pick list) still lists phone-number sign-ins from every KJ account (shared `customers` table, not per account). Make it list only singers who have sung in this account.

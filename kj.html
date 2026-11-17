@@ -1120,14 +1120,17 @@ $("bumpPriceRow").addEventListener("submit", async e => {
     const q = $f("fixQ").value.trim(); if(q.length < 2) return;
     try{ const j = await api("/api/kj/namefix/find?q=" + encodeURIComponent(q));
       if(!j.phones.length){ $f("fixHits").appendChild(el("span", "Nobody found.", "color:var(--ink-2)")); return; }
-      j.phones.forEach(p => { const b = el("button", (p.name || "?") + (p.num ? " · #" + p.num : "") + (p.kj ? " · added by the KJ" : "")); b.type = "button"; b.title = "Signed up as: " + p.alsoAs.join(", "); b.addEventListener("click", () => open(p.device)); $f("fixHits").appendChild(b); });
+      j.phones.forEach(p => { const b = el("button", null, "display:block;text-align:left;max-width:100%;white-space:normal;overflow-wrap:anywhere"); b.type = "button";
+        b.appendChild(el("div", (p.name || "?") + (p.num ? " · #" + p.num : "") + (p.kj ? " · added by the KJ" : ""), "font-weight:700"));
+        if(p.alsoAs && p.alsoAs.length) b.appendChild(el("div", "Signed up as: " + p.alsoAs.join(", "), "font-size:13px;font-weight:400;color:var(--ink-2)"));
+        b.addEventListener("click", () => open(p.device)); $f("fixHits").appendChild(b); });
     }catch(er){ if(er.message !== "pin") msg(er.message); }
   });
   async function open(device){
     msg(); armed = "";
     try{ cur = await api("/api/kj/namefix/phone?device=" + encodeURIComponent(device)); }catch(er){ if(er.message !== "pin") msg(er.message); return; }
     $f("fixPhone").hidden = false;
-    $f("fixHead").textContent = "This phone: " + (cur.name || "(no name)") + (cur.num ? " · singer #" + cur.num : "") + " · " + cur.songs.length + " songs";
+    $f("fixHead").textContent = "This phone: " + (cur.name || "(no name)") + (cur.num ? " · singer #" + cur.num : "") + " · " + cur.count + " song" + (cur.count === 1 ? "" : "s");
     $f("fixNew").value = ""; $f("fixTo").value = ""; $f("fixMine").value = "";
     const box = $f("fixSongs"); box.textContent = "";
     if(!cur.songs.length) box.appendChild(el("p", "No songs on this phone.", "color:var(--ink-2)"));
@@ -1135,8 +1138,8 @@ $("bumpPriceRow").addEventListener("submit", async e => {
       const lab = el("label", null, "display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer");
       const cb = document.createElement("input"); cb.type = "checkbox"; cb.value = r.id; cb.style.cssText = "width:22px;height:22px;flex:none";
       const t = el("div", null, "flex:1;min-width:0");
-      t.appendChild(el("div", r.song + (r.artist ? " · " + r.artist : ""), "font-weight:600"));
-      t.appendChild(el("div", "as " + r.name + " · " + (r.at ? new Date(r.at).toLocaleDateString() : "") + (r.likes ? " · ❤ " + r.likes : "") + (r.posted ? " · posted" : "") + (r.status === "queued" || r.status === "up" ? " · in line now" : ""), "font-size:13px;color:var(--ink-2)"));
+      t.appendChild(el("div", r.song + (r.artist ? " · " + r.artist : ""), "font-weight:600;overflow-wrap:anywhere"));
+      t.appendChild(el("div", "as " + r.name + " · " + (r.at ? new Date(r.at).toLocaleDateString() : "") + (r.likes ? " · ❤ " + r.likes : "") + (r.posted ? " · posted" : "") + (r.status === "queued" || r.status === "up" ? " · in line now" : r.status === "removed" ? " · removed" : ""), "overflow-wrap:anywhere;font-size:13px;color:var(--ink-2)"));
       lab.appendChild(cb); lab.appendChild(t); box.appendChild(lab);
     });
     const lg = $f("fixLog"); lg.textContent = "";
@@ -1149,7 +1152,7 @@ $("bumpPriceRow").addEventListener("submit", async e => {
   $f("fixRename").addEventListener("click", async () => {
     msg(); const n = $f("fixNew").value.trim(); if(!cur || !n){ msg("Enter the right name."); return; }
     const key = "r|" + n;
-    if(armed !== key){ armed = key; msg("", "Tap again to rename " + (cur.name || "this phone") + " → " + n + " on all " + cur.songs.length + " songs."); return; }
+    if(armed !== key){ armed = key; msg("", "Tap again to rename " + (cur.name || "this phone") + " → " + n + " on all " + cur.count + " song" + (cur.count === 1 ? "" : "s") + "."); return; }
     armed = ""; try{ const j = await api("/api/kj/namefix/rename", { device: cur.device, name: n }); await open(cur.device); msg("", "✅ " + j.text); }catch(er){ if(er.message !== "pin") msg(er.message); }
   });
   $f("fixMove").addEventListener("click", async () => {
