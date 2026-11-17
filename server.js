@@ -352,6 +352,10 @@ if (DB_OK) {
     async get(id) { return (await Q(`SELECT * FROM signups WHERE id=$1 AND tenant=$2`, [id, T()])).rows[0]; },
     async newNight() { await Q(`UPDATE signups SET status='archived' WHERE tenant=$1 AND status IN ('up','queued','done')`, [T()]); },
     async allSignups() { return (await Q(`SELECT id, name, song, artist, device, status, position, created_at, done_at, likes FROM signups WHERE tenant=$1 ORDER BY created_at`, [T()])).rows; },
+    // fix a singer's name: every query stays inside this KJ's account (tenant)
+    async allByDevice(d) { return (await Q(`SELECT id, name, song, artist, device, status, likes, posted_to, created_at, done_at FROM signups WHERE tenant=$2 AND device=$1 ORDER BY created_at DESC LIMIT 2000`, [d, T()])).rows; },
+    async moveRow(id, d, n) { await Q(`UPDATE signups SET device=$2, name=$3 WHERE id=$1 AND tenant=$4`, [id, d, n, T()]); },
+    async findNames(q) { return (await Q(`SELECT device, name, count(*)::int AS songs, max(created_at) AS last FROM signups WHERE tenant=$2 AND lower(name) LIKE $1 ESCAPE '\\' GROUP BY device, name ORDER BY max(created_at) DESC LIMIT 40`, ['%' + q.toLowerCase().replace(/[\\%_]/g, c => "\\" + c) + '%', T()])).rows; },
     async everCounts() { const r = (await Q(`SELECT count(*)::int AS n, count(DISTINCT device) FILTER (WHERE device NOT LIKE 'kj-%')::int AS phones, count(*) FILTER (WHERE device LIKE 'kj-%')::int AS dj FROM signups WHERE tenant=$1`, [T()])).rows[0]; return { signups: r.n, phones: r.phones, dj: r.dj }; },
     async getSetting(k) { const r = (await Q(`SELECT value FROM settings WHERE key=$1`, [SK(k)])).rows[0]; return r ? r.value : null; },
     async setSetting(k, v) { await Q(`INSERT INTO settings (key,value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=$2`, [SK(k), v]); },
@@ -400,6 +404,9 @@ if (DB_OK) {
     async get(id) { return rows.find(x => x.id === id && mine(x)); },
     async newNight() { rows.forEach(r => { if (mine(r) && r.status !== "removed") r.status = "archived"; }); },
     async allSignups() { return rows.filter(mine).slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))); },
+    async allByDevice(d) { return rows.filter(r => mine(r) && r.device === d).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 2000); },
+    async moveRow(id, d, n) { const r = rows.find(x => x.id === id && mine(x)); if (r) { r.device = d; r.name = n; } },
+    async findNames(q) { const m = new Map(); q = q.toLowerCase(); for (const r of rows) if (mine(r) && String(r.name).toLowerCase().includes(q)) { const k = r.device + "\u0000" + r.name, e = m.get(k) || { device: r.device, name: r.name, songs: 0, last: r.created_at }; e.songs++; if (String(r.created_at) > String(e.last)) e.last = r.created_at; m.set(k, e); } return [...m.values()].sort((a, b) => String(b.last).localeCompare(String(a.last))).slice(0, 40); },
     async everCounts() { const m = rows.filter(mine); return { signups: m.length, phones: new Set(m.filter(r => !String(r.device).startsWith("kj-")).map(r => r.device)).size, dj: m.filter(r => String(r.device).startsWith("kj-")).length }; },
     async getSetting(k) { return settings[SK(k)] ?? null; },
     async setSetting(k, v) { settings[SK(k)] = v; },
@@ -697,7 +704,9 @@ async function singerNum(key) {
   await db.setSetting("singernum:" + key, n); await db.setSetting("singerby:" + n, key); return n;
 }
 async function ownerOfNum(n) { const v = await db.getSetting("singerby:" + n); if (!v) return null; return v.startsWith("dev:") ? v.slice(4) : /^\d+$/.test(v) ? "c" + v : null; }
-async function nameOfOwner(o) { try { if (isCust(o)) { const c = await db.customer(parseInt(o.slice(1), 10)); return (c && c.name) || ""; } const pr = await getProfile(o); return (pr && pr.name) || ""; } catch (e) { return ""; } }
+// a phone-number account is shared by every KJ account, so a name fixed in one KJ's account is kept for that account only
+async function custName(c) { if (!c) return ""; return (await db.getSetting("custname:" + c.id)) || c.name || ""; }
+async function nameOfOwner(o) { try { if (isCust(o)) { const c = await db.customer(parseInt(o.slice(1), 10)); return await custName(c); } const pr = await getProfile(o); return (pr && pr.name) || ""; } catch (e) { return ""; } }
 // partner pick list: everyone who has ever sung here from their phone (newest name for each phone), plus signed-in singers;
 // refreshed every few minutes (singer numbers are made once and kept)
 const singersCache = new Map();
@@ -760,7 +769,7 @@ async function signupInner(req, res) {
     if (away - acc > (Number(TEN().radius) || 150)) return res.status(403).json({ error: "far", miles: Math.round(away / 1609.34 * 10) / 10, acc: Math.round(Number(req.body.acc) || 0), message: "You need to be at " + TEN().short + " to sign up." });
   }
   const profile = await getProfile(dev), cust = uid ? await db.customer(uid) : null;
-  const name = (cust && cust.name) || (profile && profile.name) || clean(req.body.name, 30), song = clean(req.body.song, 80), artist = clean(req.body.artist, 60);
+  const name = (cust && await custName(cust)) || (profile && profile.name) || clean(req.body.name, 30), song = clean(req.body.song, 80), artist = clean(req.body.artist, 60);
   if (!name) return res.status(400).json({ error: "Enter your name or stage name." });
   if (!profile) await setProfile(dev, { name, customer: uid || null });
   if (!song) return res.status(400).json({ error: "Enter the song you want to sing." });
@@ -945,10 +954,10 @@ app.get("/api/photo/:id", wrap(async (req, res) => {
   res.set({ "Content-Type": b.type, "Cache-Control": "public, max-age=600", "X-Content-Type-Options": "nosniff" }).send(b.buf);
 }));
 app.get("/api/me", wrap(async (req, res) => {
-  const u = currentUser(req), c = u ? await db.customer(u) : null, p = await getProfile(device(req, res));
+  const u = currentUser(req), c = u ? await db.customer(u) : null, p = await getProfile(device(req, res)), cn = c ? await custName(c) : "";
   const dv = device(req, res);
   const pi = await photoInfo(owner(req, res));
-  res.json({ photo: pi.at || null, photoSt: pi.st || null, photoLock: await photoLocked(owner(req, res)), terms: TERMS_V, termsOk: await termsOk(dv), auth: await authOn(), num: await singerNum(c ? c.id : numKeyOf(owner(req, res))), user: c ? { name: c.name, phone: "•••-•••-" + c.phone.slice(-4), num: await singerNum(c.id) } : null, profileName: (c && c.name) || (p && p.name) || null });
+  res.json({ photo: pi.at || null, photoSt: pi.st || null, photoLock: await photoLocked(owner(req, res)), terms: TERMS_V, termsOk: await termsOk(dv), auth: await authOn(), num: await singerNum(c ? c.id : numKeyOf(owner(req, res))), user: c ? { name: cn, phone: "•••-•••-" + c.phone.slice(-4), num: await singerNum(c.id) } : null, profileName: cn || (p && p.name) || null });
 }));
 const textHits = new Map();
 app.post("/api/auth/start", wrap(async (req, res) => {
@@ -971,7 +980,7 @@ app.post("/api/auth/check", wrap(async (req, res) => {
   const dev = device(req, res), p = await getProfile(dev), c = await db.addCustomer(phone);
   if (p && p.customer && p.customer !== c.id) return res.status(409).json({ error: "This phone is already set up for " + (p.name || "someone else") + ". One person per phone. Ask the KJ if this is a mistake." });
   if (!c.name && p && p.name) { await db.setCustomerName(c.id, p.name); c.name = p.name; }
-  await setProfile(dev, { name: c.name || (p && p.name) || "", customer: c.id });
+  await setProfile(dev, { name: (await custName(c)) || (p && p.name) || "", customer: c.id });
   await db.moveDevice(dev, "c" + c.id);
   setUserCookie(req, res, c.id);
   res.json({ ok: true, user: { name: c.name, phone: "•••-•••-" + phone.slice(-4), num: await singerNum(c.id) }, isNew: !c.name });
@@ -1233,6 +1242,7 @@ async function describeKj(req) {
     "/api/kj/tips/take": (b.on ? "Started" : "Stopped") + " taking tips", "/api/kj/tips/staff": (b.on ? "Turned tips back on" : "Stopped tips tonight"),
     "/api/kj/bump-price": "Set move-up price to $" + b.price + " a spot", "/api/kj/hosts": "Added login " + (b.name || ""), "/api/kj/hosts/reset": "Reset the PIN for " + (b.name || ""),
     "/api/kj/hosts/remove": "Removed login " + (b.name || ""), "/api/kj/hosts/role": "Made " + (b.name || "") + " " + (b.role || ""), "/api/kj/hosts/manager": (b.on ? "Made " : "Removed manager from ") + (b.name || "") + (b.on ? " a manager" : ""),
+    "/api/kj/namefix/rename": "Fixed a singer's name to " + (b.name || ""), "/api/kj/namefix/move": "Moved songs to singer #" + (b.toNum || ""), "/api/kj/namefix/undo": "Undid a name fix",
     "/api/kj/promos": "Saved an ad", "/api/kj/promos/remove": "Removed an ad", "/api/kj/venue": "Set tonight's venue",
     "/api/kj-open": "Sign-ups " + (b.open ? "opened" : "closed"), "/api/kj-lyrics": "Lyrics " + on(b.on), "/api/kj-multi": "One song per person on the queue " + on(!b.on),
     "/api/kj-photoreview": "Approve photos first " + on(b.on), "/api/kj-phone": "Phone sign-in " + on(b.on), "/api/kj-pause": b.minutes ? "Paused sign-ups" + (b.minutes > 0 ? " for " + b.minutes + " min" : "") : "Resumed sign-ups", "/api/kj-newnight": "Started a new night"
@@ -1839,6 +1849,72 @@ app.post("/api/kj/:id/song", wrap(async (req, res) => {
   const song = clean(req.body.song, 80), artist = clean(req.body.artist, 60);
   if (!song) return res.status(400).json({ error: "Enter the song." });
   await db.setSong(id, song, artist); await setNoSong(id, false); await clearRepeat(id); res.json({ ok: true });
+}));
+/* ---------- Fix a singer's name (any KJ login): rename a phone everywhere, or move songs that were really someone else's.
+   Everything hangs off the song entries, so likes, posts, the wall and duets follow the song. Tips stay with whoever paid.
+   Every fix is logged and can be undone. Everything here stays inside this KJ's account: songs by tenant, names, singer #s
+   and the log in this account's settings; a phone-number account's name is changed for this account only. ---------- */
+const isCustKey = k => /^c\d{1,9}$/.test(k);
+async function keyName(k) { if (isCustKey(k)) return await custName(await db.customer(parseInt(k.slice(1), 10))); const p = await getProfile(k); return (p && p.name) || ""; }
+async function setKeyName(k, n) { if (isCustKey(k)) return db.setSetting("custname:" + k.slice(1), n); const p = await getProfile(k); await setProfile(k, { ...(p || {}), name: n }); }
+async function keyNum(k) { return (await db.getSetting("singernum:" + numKeyOf(k))) || ""; }
+async function nameFixLog() { try { return JSON.parse((await db.getSetting("namefix:log")) || "[]"); } catch (e) { return []; } }
+async function saveNameFix(entry) { const l = await nameFixLog(); l.unshift(entry); await db.setSetting("namefix:log", JSON.stringify(l.slice(0, 100))); singersCache.delete(T()); }
+// is this phone part of this KJ's account? (has songs, a singer # or a profile here)
+async function knownHere(d, rows) { return !!(rows.length || (await keyNum(d)) || (await getProfile(d))); }
+app.get("/api/kj/namefix/find", wrap(async (req, res) => {
+  const q = String(req.query.q || "").trim().slice(0, 30); if (q.length < 2) return res.json({ phones: [] });
+  const out = new Map();
+  if (/^\d{6}$/.test(q)) { const k = await ownerOfNum(q); if (k) out.set(k, { device: k, names: [] }); }
+  for (const r of await db.findNames(q)) { const e = out.get(r.device) || { device: r.device, names: [] }; e.names.push(r.name + " (" + r.songs + ")"); out.set(r.device, e); }
+  const phones = [];
+  for (const e of [...out.values()].slice(0, 25)) phones.push({ device: e.device, name: (await keyName(e.device)) || (e.names[0] || "").replace(/ \(\d+\)$/, ""), num: await keyNum(e.device), alsoAs: e.names, kj: e.device.startsWith("kj-") });
+  res.json({ phones });
+}));
+app.get("/api/kj/namefix/phone", wrap(async (req, res) => {
+  const d = String(req.query.device || "").slice(0, 80); if (!d) return res.status(400).json({ error: "Pick a singer." });
+  const all = await db.allByDevice(d);
+  if (!(await knownHere(d, all))) return res.status(404).json({ error: "That singer isn't in this account." });
+  const songs = all.map(r => ({ id: r.id, name: r.name, song: r.song, artist: r.artist, status: r.status, likes: r.likes || 0, posted: !!r.posted_to, at: r.done_at || r.created_at }));
+  res.json({ device: d, name: await keyName(d), num: await keyNum(d), songs, log: (await nameFixLog()).filter(x => x.device === d || x.to === d).slice(0, 5).map(x => ({ id: x.id, at: x.at, by: x.by, text: x.text, undone: !!x.undone })) });
+}));
+app.post("/api/kj/namefix/rename", wrap(async (req, res) => {
+  const d = String(req.body.device || "").slice(0, 80), n = clean(req.body.name, 30);
+  if (!d || !n) return res.status(400).json({ error: "Enter the right name." });
+  const rows = await db.allByDevice(d);
+  if (!(await knownHere(d, rows))) return res.status(404).json({ error: "That singer isn't in this account." });
+  const before = rows.map(r => ({ id: r.id, device: r.device, name: r.name })), oldName = await keyName(d);
+  for (const r of rows) if (r.name !== n) await db.rename(r.id, n);
+  await setKeyName(d, n);
+  const text = "Renamed " + (oldName || (rows[0] && rows[0].name) || "a singer") + " to " + n + " (" + rows.length + " song" + (rows.length === 1 ? "" : "s") + ")";
+  await saveNameFix({ id: crypto.randomBytes(6).toString("hex"), at: new Date().toISOString(), by: req.kj.name, kind: "rename", device: d, rows: before, names: { [d]: oldName }, text });
+  res.json({ ok: true, text });
+}));
+app.post("/api/kj/namefix/move", wrap(async (req, res) => {
+  const d = String(req.body.device || "").slice(0, 80), ids = (Array.isArray(req.body.ids) ? req.body.ids : []).map(Number).filter(Boolean), num = String(req.body.toNum || "").trim(), mineName = clean(req.body.newName, 30);
+  if (!d || !ids.length) return res.status(400).json({ error: "Tick the songs that were someone else's." });
+  if (!/^\d{6}$/.test(num)) return res.status(400).json({ error: "Enter their 6-digit singer #. They see it in the app under their name." });
+  const to = await ownerOfNum(num); if (!to) return res.status(404).json({ error: "No singer has #" + num + "." });
+  if (to === d) return res.status(400).json({ error: "That's this same phone's number." });
+  const rows = await db.allByDevice(d), pick = new Set(ids), moving = rows.filter(r => pick.has(r.id)), staying = rows.filter(r => !pick.has(r.id));
+  if (!moving.length) return res.status(400).json({ error: "Those songs aren't on this phone." });
+  const toName = (await keyName(to)) || moving[0].name, oldName = await keyName(d);
+  const before = rows.map(r => ({ id: r.id, device: r.device, name: r.name }));
+  for (const r of moving) await db.moveRow(r.id, to, toName);
+  if (mineName) { for (const r of staying) if (r.name !== mineName) await db.rename(r.id, mineName); await setKeyName(d, mineName); }
+  const text = "Moved " + moving.length + " song" + (moving.length === 1 ? "" : "s") + " to " + toName + " (#" + num + ")" + (mineName ? "; this phone is now " + mineName : "");
+  await saveNameFix({ id: crypto.randomBytes(6).toString("hex"), at: new Date().toISOString(), by: req.kj.name, kind: "move", device: d, to, rows: before, names: { [d]: oldName }, text });
+  res.json({ ok: true, text });
+}));
+app.post("/api/kj/namefix/undo", wrap(async (req, res) => {
+  const l = await nameFixLog(), e = l.find(x => x.id === String(req.body.id || ""));
+  if (!e) return res.status(404).json({ error: "That fix isn't in the log." });
+  if (e.undone) return res.status(409).json({ error: "Already undone." });
+  for (const r of e.rows) await db.moveRow(r.id, r.device, r.name);
+  for (const [k, n] of Object.entries(e.names || {})) if (n) await setKeyName(k, n);
+  e.undone = new Date().toISOString(); e.undoneBy = req.kj.name;
+  await db.setSetting("namefix:log", JSON.stringify(l)); singersCache.delete(T());
+  res.json({ ok: true, text: "Undid: " + e.text });
 }));
 app.post("/api/kj/:id/rename", wrap(async (req, res) => {
   const id = parseInt(req.params.id, 10), row = await db.get(id), n = clean(req.body.name, 30);
